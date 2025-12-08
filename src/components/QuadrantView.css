@@ -1,0 +1,83 @@
+.quadrant-view {
+  width: 100%;
+}
+
+.quadrant-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.quadrant {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+}
+
+.quadrant-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 3px solid;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.quadrant-header h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.quadrant[data-priority="1"] .quadrant-header h2 {
+  color: #ff4444;
+}
+
+.event-count {
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: normal;
+}
+
+.quadrant-content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.empty-quadrant {
+  text-align: center;
+  color: #ccc;
+  padding: 3rem 1rem;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 1200px) {
+  .quadrant-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .quadrant-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .quadrant-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  .quadrant-content {
+    padding: 0.75rem;
+  }
+}
+
+

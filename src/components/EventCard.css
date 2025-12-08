@@ -1,0 +1,277 @@
+.event-card {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.event-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.event-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.event-card-title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.event-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.event-category {
+  padding: 0.25rem 0.5rem;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.event-card-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.btn-icon {
+  background: none;
+  border: 1px solid #ddd;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  color: #666;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  background: #f5f5f5;
+  border-color: #bbb;
+}
+
+.btn-icon.btn-edit:hover {
+  background: #e3f2fd;
+  border-color: #2196f3;
+  color: #1976d2;
+}
+
+.btn-icon.btn-delete {
+  color: #f44336;
+  border-color: #f44336;
+}
+
+.btn-icon.btn-delete:hover {
+  background: #ffebee;
+  border-color: #d32f2f;
+  color: #c62828;
+}
+
+.event-description {
+  margin: 0.5rem 0;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.event-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.meta-item {
+  color: #555;
+}
+
+.deadline-warning {
+  color: #f44336;
+  font-weight: 600;
+}
+
+.days-left {
+  color: #2196f3;
+  font-weight: 500;
+}
+
+.days-overdue {
+  color: #f44336;
+  font-weight: 600;
+}
+
+.event-steps {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.steps-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.steps-header strong {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.btn-add-step {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+}
+
+.btn-add-step:hover {
+  background: #45a049;
+}
+
+.add-step-input {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.add-step-input input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.add-step-input button {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.add-step-input button:first-of-type {
+  background: #4caf50;
+  color: white;
+}
+
+.add-step-input button:first-of-type:hover {
+  background: #45a049;
+}
+
+.add-step-input button:last-of-type {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.add-step-input button:last-of-type:hover {
+  background: #e0e0e0;
+}
+
+.steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.step-item:last-child {
+  border-bottom: none;
+}
+
+.step-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.step-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.step-checkbox span {
+  flex: 1;
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.step-checkbox span.step-completed {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.btn-delete-step-small {
+  background: none;
+  border: none;
+  color: #f44336;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+  opacity: 0.6;
+}
+
+.btn-delete-step-small:hover {
+  background: #ffebee;
+  opacity: 1;
+}
+
+.no-steps {
+  color: #999;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 1rem;
+  font-style: italic;
+}
