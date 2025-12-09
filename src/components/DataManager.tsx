@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { exportToFile, exportToText, importFromFile, importFromText, generateQRData, importFromQRData, recordBackup } from '../utils/dataSync';
+import { exportToFile, exportToText, importFromFile, importFromText, generateQRData, recordBackup } from '../utils/dataSync';
 import './DataManager.css';
 
 interface DataManagerProps {

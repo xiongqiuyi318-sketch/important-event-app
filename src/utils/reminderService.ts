@@ -1,4 +1,4 @@
-import { Event, EventStep } from '../types';
+import { Event } from '../types';
 
 export interface ReminderItem {
   id: string;
