@@ -3,6 +3,7 @@ import { Event, EventPriority } from '../types';
 import { loadEvents, updateEvent, deleteEvent, reorderEvents } from '../utils/storage';
 import EventForm from '../components/EventForm';
 import QuadrantView from '../components/QuadrantView';
+import DataManager from '../components/DataManager';
 import './HomePage.css';
 
 export default function HomePage() {
@@ -235,6 +236,7 @@ export default function HomePage() {
         >
           + 新增事件
         </button>
+        <DataManager onDataChanged={loadEventsData} />
       </div>
 
       {showForm && (
