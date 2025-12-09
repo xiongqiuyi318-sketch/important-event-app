@@ -94,6 +94,108 @@ export default function HomePage() {
     loadEventsData();
   }, [events, loadEventsData]);
 
+  const handleUpdateStepStatus = useCallback((eventId: string, stepId: string, status: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+
+    const updatedSteps = event.steps.map(step =>
+      step.id === stepId ? { ...step, status: status || undefined } : step
+    );
+
+    updateEvent(eventId, { steps: updatedSteps });
+    loadEventsData();
+  }, [events, loadEventsData]);
+
+  const handleMoveStepUp = useCallback((eventId: string, stepId: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+
+    const sortedSteps = [...event.steps].sort((a, b) => a.order - b.order);
+    const stepIndex = sortedSteps.findIndex(s => s.id === stepId);
+    
+    if (stepIndex <= 0) return; // 已经是第一个
+
+    const currentStep = sortedSteps[stepIndex];
+    const previousStep = sortedSteps[stepIndex - 1];
+
+    const updatedSteps = event.steps.map(step => {
+      if (step.id === currentStep.id) {
+        return { ...step, order: previousStep.order };
+      } else if (step.id === previousStep.id) {
+        return { ...step, order: currentStep.order };
+      }
+      return step;
+    });
+
+    updateEvent(eventId, { steps: updatedSteps });
+    loadEventsData();
+  }, [events, loadEventsData]);
+
+  const handleMoveStepDown = useCallback((eventId: string, stepId: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+
+    const sortedSteps = [...event.steps].sort((a, b) => a.order - b.order);
+    const stepIndex = sortedSteps.findIndex(s => s.id === stepId);
+    
+    if (stepIndex < 0 || stepIndex >= sortedSteps.length - 1) return; // 已经是最后一个
+
+    const currentStep = sortedSteps[stepIndex];
+    const nextStep = sortedSteps[stepIndex + 1];
+
+    const updatedSteps = event.steps.map(step => {
+      if (step.id === currentStep.id) {
+        return { ...step, order: nextStep.order };
+      } else if (step.id === nextStep.id) {
+        return { ...step, order: currentStep.order };
+      }
+      return step;
+    });
+
+    updateEvent(eventId, { steps: updatedSteps });
+    loadEventsData();
+  }, [events, loadEventsData]);
+
+  const handleUpdateStepContent = useCallback((eventId: string, stepId: string, content: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+
+    if (!content.trim()) return; // 不允许空内容
+
+    const updatedSteps = event.steps.map(step =>
+      step.id === stepId ? { ...step, content: content.trim() } : step
+    );
+
+    updateEvent(eventId, { steps: updatedSteps });
+    loadEventsData();
+  }, [events, loadEventsData]);
+
+  const handleUpdateStepTime = useCallback((
+    eventId: string,
+    stepId: string,
+    scheduledTime: string | undefined,
+    reminderEnabled: boolean,
+    reminderType: 'sound' | 'vibration' | 'both'
+  ) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+
+    const updatedSteps = event.steps.map(step => {
+      if (step.id === stepId) {
+        return {
+          ...step,
+          scheduledTime: scheduledTime ? new Date(scheduledTime).toISOString() : undefined,
+          reminderEnabled: reminderEnabled || undefined,
+          reminderType: reminderEnabled ? reminderType : undefined,
+        };
+      }
+      return step;
+    });
+
+    updateEvent(eventId, { steps: updatedSteps });
+    loadEventsData();
+  }, [events, loadEventsData]);
+
   // 事件排序函数（按sortOrder优先，再按创建时间）
   const sortEvents = useCallback((a: Event, b: Event): number => {
     if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
@@ -154,6 +256,11 @@ export default function HomePage() {
         onMoveEvent={handleMoveEvent}
         onAddStep={handleAddStep}
         onDeleteStep={handleDeleteStep}
+        onUpdateStepStatus={handleUpdateStepStatus}
+        onMoveStepUp={handleMoveStepUp}
+        onMoveStepDown={handleMoveStepDown}
+        onUpdateStepContent={handleUpdateStepContent}
+        onUpdateStepTime={handleUpdateStepTime}
       />
     </div>
   );

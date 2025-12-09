@@ -109,7 +109,15 @@ export default function HistoryPage() {
                         key={step.id} 
                         className={step.completed ? 'completed-step' : ''}
                       >
-                        {step.content}
+                        <div className="step-content-wrapper">
+                          <span>{step.content}</span>
+                          {step.status && (
+                            <div className="step-status-history">
+                              <span className="step-status-label">状态：</span>
+                              <span className="step-status-text">{step.status}</span>
+                            </div>
+                          )}
+                        </div>
                       </li>
                     ))}
                   </ul>

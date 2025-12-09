@@ -16,6 +16,10 @@ export interface EventStep {
   content: string;
   completed: boolean;
   order: number;
+  status?: string; // 步骤完成情况的描述
+  scheduledTime?: string; // ISO date string (optional) - 步骤计划时间
+  reminderEnabled?: boolean; // 是否启用提醒
+  reminderType?: 'sound' | 'vibration' | 'both'; // 提醒类型：铃声、振动或两者
 }
 
 export interface Event {
@@ -31,6 +35,10 @@ export interface Event {
   completed: boolean;
   expired: boolean;
   sortOrder: number; // 用于手动排序
+  startTimeReminderEnabled?: boolean; // 开始时间是否启用提醒
+  startTimeReminderType?: 'sound' | 'vibration' | 'both'; // 开始时间提醒类型
+  deadlineReminderEnabled?: boolean; // 结束时间是否启用提醒
+  deadlineReminderType?: 'sound' | 'vibration' | 'both'; // 结束时间提醒类型
 }
 
 export interface EventsState {

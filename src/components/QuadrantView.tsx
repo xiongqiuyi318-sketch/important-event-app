@@ -15,6 +15,11 @@ interface QuadrantViewProps {
   onMoveEvent: (id: string, direction: 'up' | 'down', priority: number) => void;
   onAddStep: (eventId: string, content: string) => void;
   onDeleteStep: (eventId: string, stepId: string) => void;
+  onUpdateStepStatus: (eventId: string, stepId: string, status: string) => void;
+  onMoveStepUp: (eventId: string, stepId: string) => void;
+  onMoveStepDown: (eventId: string, stepId: string) => void;
+  onUpdateStepContent: (eventId: string, stepId: string, content: string) => void;
+  onUpdateStepTime: (eventId: string, stepId: string, scheduledTime: string | undefined, reminderEnabled: boolean, reminderType: 'sound' | 'vibration' | 'both') => void;
 }
 
 const quadrantConfig = {
@@ -32,6 +37,11 @@ export default function QuadrantView({
   onMoveEvent,
   onAddStep,
   onDeleteStep,
+  onUpdateStepStatus,
+  onMoveStepUp,
+  onMoveStepDown,
+  onUpdateStepContent,
+  onUpdateStepTime,
 }: QuadrantViewProps) {
   return (
     <div className="quadrant-view">
@@ -69,6 +79,11 @@ export default function QuadrantView({
                       onMoveDown={() => onMoveEvent(event.id, 'down', priority)}
                       onAddStep={onAddStep}
                       onDeleteStep={onDeleteStep}
+                      onUpdateStepStatus={onUpdateStepStatus}
+                      onMoveStepUp={onMoveStepUp}
+                      onMoveStepDown={onMoveStepDown}
+                      onUpdateStepContent={onUpdateStepContent}
+                      onUpdateStepTime={onUpdateStepTime}
                     />
                   ))
                 )}

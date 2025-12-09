@@ -26,6 +26,18 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   const [startTime, setStartTime] = useState(
     event?.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : ''
   );
+  const [startTimeReminderEnabled, setStartTimeReminderEnabled] = useState(
+    event?.startTimeReminderEnabled || false
+  );
+  const [startTimeReminderType, setStartTimeReminderType] = useState<'sound' | 'vibration' | 'both'>(
+    event?.startTimeReminderType || 'sound'
+  );
+  const [deadlineReminderEnabled, setDeadlineReminderEnabled] = useState(
+    event?.deadlineReminderEnabled || false
+  );
+  const [deadlineReminderType, setDeadlineReminderType] = useState<'sound' | 'vibration' | 'both'>(
+    event?.deadlineReminderType || 'sound'
+  );
   const [steps, setSteps] = useState(event?.steps || []);
   const [newStepContent, setNewStepContent] = useState('');
 
@@ -92,7 +104,11 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
       createdAt: event?.createdAt || new Date().toISOString(),
       completed: event?.completed || false,
       expired: false,
-      sortOrder: event?.sortOrder || loadEvents().filter(e => e.priority === priority).length
+      sortOrder: event?.sortOrder || loadEvents().filter(e => e.priority === priority).length,
+      startTimeReminderEnabled: startTime && startTimeReminderEnabled ? startTimeReminderEnabled : undefined,
+      startTimeReminderType: startTime && startTimeReminderEnabled ? startTimeReminderType : undefined,
+      deadlineReminderEnabled: deadline && deadlineReminderEnabled ? deadlineReminderEnabled : undefined,
+      deadlineReminderType: deadline && deadlineReminderEnabled ? deadlineReminderType : undefined,
     };
 
     if (event) {
@@ -153,6 +169,49 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
               />
+              {startTime && (
+                <div className="reminder-settings">
+                  <label className="reminder-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={startTimeReminderEnabled}
+                      onChange={(e) => setStartTimeReminderEnabled(e.target.checked)}
+                    />
+                    <span>启用提醒</span>
+                  </label>
+                  {startTimeReminderEnabled && (
+                    <div className="reminder-type-group">
+                      <label>
+                        <input
+                          type="radio"
+                          name="startTimeReminder"
+                          checked={startTimeReminderType === 'sound'}
+                          onChange={() => setStartTimeReminderType('sound')}
+                        />
+                        铃声
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name="startTimeReminder"
+                          checked={startTimeReminderType === 'vibration'}
+                          onChange={() => setStartTimeReminderType('vibration')}
+                        />
+                        振动
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name="startTimeReminder"
+                          checked={startTimeReminderType === 'both'}
+                          onChange={() => setStartTimeReminderType('both')}
+                        />
+                        铃声+振动
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -162,6 +221,49 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
               />
+              {deadline && (
+                <div className="reminder-settings">
+                  <label className="reminder-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={deadlineReminderEnabled}
+                      onChange={(e) => setDeadlineReminderEnabled(e.target.checked)}
+                    />
+                    <span>启用提醒</span>
+                  </label>
+                  {deadlineReminderEnabled && (
+                    <div className="reminder-type-group">
+                      <label>
+                        <input
+                          type="radio"
+                          name="deadlineReminder"
+                          checked={deadlineReminderType === 'sound'}
+                          onChange={() => setDeadlineReminderType('sound')}
+                        />
+                        铃声
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name="deadlineReminder"
+                          checked={deadlineReminderType === 'vibration'}
+                          onChange={() => setDeadlineReminderType('vibration')}
+                        />
+                        振动
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name="deadlineReminder"
+                          checked={deadlineReminderType === 'both'}
+                          onChange={() => setDeadlineReminderType('both')}
+                        />
+                        铃声+振动
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
