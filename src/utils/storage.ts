@@ -12,7 +12,7 @@ const checkEventExpired = (event: Event): boolean => {
 };
 
 // 数据迁移函数（当数据结构变化时使用）
-const migrateData = (data: any, version: number): EventsState => {
+const migrateData = (data: any, _version: number): EventsState => {
   // 当前版本为1，无需迁移
   // 未来如果数据结构变化，可以在这里添加迁移逻辑
   // 例如：if (version < 2) { ... 迁移逻辑 ... }

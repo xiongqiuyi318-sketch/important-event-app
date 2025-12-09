@@ -104,7 +104,7 @@ export default function HistoryPage() {
                 <div className="history-item-steps">
                   <strong>完成步骤：</strong>
                   <ul>
-                    {event.steps.map((step, index) => (
+                    {event.steps.map((step) => (
                       <li 
                         key={step.id} 
                         className={step.completed ? 'completed-step' : ''}

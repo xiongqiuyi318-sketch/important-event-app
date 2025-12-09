@@ -3,7 +3,6 @@ import './PasswordProtection.css';
 
 interface PasswordProtectionProps {
   children: React.ReactNode;
-  onLogout?: () => void;
 }
 
 // 访问密码：570508
@@ -17,7 +16,7 @@ const hashPassword = (pwd: string): string => {
   return btoa(pwd + 'salt_570508').substring(0, 32);
 };
 
-export default function PasswordProtection({ children, onLogout }: PasswordProtectionProps) {
+export default function PasswordProtection({ children }: PasswordProtectionProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [rememberPassword, setRememberPassword] = useState(false);
