@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import PasswordProtection from './components/PasswordProtection';
+import ReminderManager from './components/ReminderManager';
 import HomePage from './pages/HomePage';
 import HistoryPage from './pages/HistoryPage';
 import './App.css';
@@ -48,6 +49,7 @@ function Navigation() {
 function App() {
   return (
     <PasswordProtection>
+      <ReminderManager />
       <Router>
         <div className="app">
           <header className="app-header">
