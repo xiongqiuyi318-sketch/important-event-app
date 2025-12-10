@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Event, EventCategory, EventPriority } from '../types';
 import { addEvent, updateEvent, loadEvents } from '../utils/storage';
 import { generateStepsForCategory, updateStepsFromDescription } from '../utils/stepGenerator';
@@ -10,16 +10,23 @@ interface EventFormProps {
   onCancel: () => void;
 }
 
+interface ValidationError {
+  field: 'title' | 'category' | 'priority';
+  label: string;
+  message: string;
+}
+
 const categories: EventCategory[] = [
   '发货', '进口', '本地销售', '开会', '学习', 
   '项目开发', '活动策划', '机械维修', '其他'
 ];
 
 export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
+  // 表单数据状态 - 改成强制选择（无默认值）
   const [title, setTitle] = useState(event?.title || '');
   const [description, setDescription] = useState(event?.description || '');
-  const [category, setCategory] = useState<EventCategory>(event?.category || '其他');
-  const [priority, setPriority] = useState<EventPriority>(event?.priority || 3);
+  const [category, setCategory] = useState<EventCategory | ''>(event?.category || '');
+  const [priority, setPriority] = useState<EventPriority | ''>(event?.priority || '');
   const [deadline, setDeadline] = useState(
     event?.deadline ? new Date(event.deadline).toISOString().slice(0, 16) : ''
   );
@@ -40,11 +47,93 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   );
   const [steps, setSteps] = useState(event?.steps || []);
   const [newStepContent, setNewStepContent] = useState('');
+  
+  // 验证状态
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [touched, setTouched] = useState<Set<string>>(new Set());
+  
+  // 用于自动滚动到错误字段
+  const titleRef = useRef<HTMLInputElement>(null);
+  const categoryRef = useRef<HTMLSelectElement>(null);
+  const priorityRef = useRef<HTMLSelectElement>(null);
+
+  // 验证函数
+  const validateForm = (): ValidationError[] => {
+    const errors: ValidationError[] = [];
+    
+    // 验证标题
+    if (!title || title.trim() === '') {
+      errors.push({
+        field: 'title',
+        label: '事件标题',
+        message: '请输入事件标题'
+      });
+    } else if (title.trim().length < 2) {
+      errors.push({
+        field: 'title',
+        label: '事件标题',
+        message: '事件标题至少需要2个字符'
+      });
+    }
+    
+    // 验证分类
+    if (!category || category === '') {
+      errors.push({
+        field: 'category',
+        label: '事件分类',
+        message: '请选择事件分类'
+      });
+    }
+    
+    // 验证优先级
+    if (!priority || priority === '') {
+      errors.push({
+        field: 'priority',
+        label: '优先级',
+        message: '请选择优先级'
+      });
+    }
+    
+    return errors;
+  };
+  
+  // 清除特定字段的错误
+  const clearFieldError = (field: 'title' | 'category' | 'priority') => {
+    setValidationErrors(prev => prev.filter(error => error.field !== field));
+  };
+  
+  // 滚动到第一个错误字段并聚焦
+  const scrollToFirstError = (errors: ValidationError[]) => {
+    if (errors.length === 0) return;
+    
+    const firstError = errors[0];
+    let element: HTMLElement | null = null;
+    
+    switch (firstError.field) {
+      case 'title':
+        element = titleRef.current;
+        break;
+      case 'category':
+        element = categoryRef.current;
+        break;
+      case 'priority':
+        element = priorityRef.current;
+        break;
+    }
+    
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        element?.focus();
+      }, 300);
+    }
+  };
 
   // 当标题或描述变化时，自动生成步骤（仅新建事件）
   useEffect(() => {
-    if (!event && (title || description)) {
-      const generatedSteps = generateStepsForCategory(category, title, description);
+    if (!event && category && category !== '' && (title || description)) {
+      const generatedSteps = generateStepsForCategory(category as EventCategory, title, description);
       setSteps(generatedSteps);
     }
   }, [title, description, category, event]);
@@ -87,17 +176,28 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim()) {
-      alert('请填写事件标题');
+    // 执行验证
+    const errors = validateForm();
+    
+    if (errors.length > 0) {
+      // 有错误：显示错误
+      setValidationErrors(errors);
+      setShowErrorModal(true);
+      
+      // 标记所有字段为已触摸
+      setTouched(new Set(['title', 'category', 'priority']));
+      
+      // 不提交表单
       return;
     }
 
+    // 验证通过：保存数据
     const eventData: Event = {
       id: event?.id || `event-${Date.now()}`,
       title: title.trim(),
       description: description.trim() || undefined,
-      category,
-      priority,
+      category: category as EventCategory,
+      priority: priority as EventPriority,
       deadline: deadline ? new Date(deadline).toISOString() : undefined,
       startTime: startTime ? new Date(startTime).toISOString() : undefined,
       steps: steps.map((s, index) => ({ ...s, order: index })),
@@ -119,51 +219,148 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
 
     onSave();
   };
+  
+  // 处理错误弹窗关闭
+  const handleCloseErrorModal = () => {
+    setShowErrorModal(false);
+    // 关闭弹窗后滚动到第一个错误字段
+    setTimeout(() => {
+      scrollToFirstError(validationErrors);
+    }, 100);
+  };
+
+  // 获取字段的错误信息
+  const getFieldError = (field: 'title' | 'category' | 'priority'): string | null => {
+    if (!touched.has(field)) return null;
+    const error = validationErrors.find(e => e.field === field);
+    return error ? error.message : null;
+  };
 
   return (
     <div className="modal-overlay">
       <div className="event-form-modal">
         <h2>{event ? '编辑事件' : '新增事件'}</h2>
+        
+        {/* 错误提示弹窗 */}
+        {showErrorModal && validationErrors.length > 0 && (
+          <div className="error-modal-overlay" onClick={handleCloseErrorModal}>
+            <div className="error-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="error-modal-header">
+                <h3>⚠️ 无法创建事件</h3>
+              </div>
+              <div className="error-modal-content">
+                <p>以下必填项未填写：</p>
+                <ul className="error-list">
+                  {validationErrors.map((error, index) => (
+                    <li key={index}>
+                      <span className="error-icon">❌</span>
+                      <span className="error-text">{error.label}：{error.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="error-modal-actions">
+                <button 
+                  type="button"
+                  className="btn-error-ok" 
+                  onClick={handleCloseErrorModal}
+                >
+                  知道了
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>事件标题 *</label>
+          {/* 事件标题 - 必填 */}
+          <div className={`form-group ${getFieldError('title') ? 'has-error' : ''}`}>
+            <label className="form-label required">
+              事件标题
+              <span className="required-mark">🔴 必填</span>
+            </label>
             <input
+              ref={titleRef}
               type="text"
+              className={`form-input ${getFieldError('title') ? 'error' : ''}`}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                clearFieldError('title');
+              }}
+              onBlur={() => setTouched(prev => new Set([...prev, 'title']))}
               placeholder="请输入事件标题"
-              required
             />
+            {getFieldError('title') && (
+              <div className="field-error">
+                <span className="error-icon">❌</span>
+                <span>{getFieldError('title')}</span>
+              </div>
+            )}
           </div>
 
-          <div className="form-group">
-            <label>事件分类 *</label>
+          {/* 事件分类 - 必填 */}
+          <div className={`form-group ${getFieldError('category') ? 'has-error' : ''}`}>
+            <label className="form-label required">
+              事件分类
+              <span className="required-mark">🔴 必填</span>
+            </label>
             <select
+              ref={categoryRef}
+              className={`form-input ${getFieldError('category') ? 'error' : ''}`}
               value={category}
-              onChange={(e) => setCategory(e.target.value as EventCategory)}
+              onChange={(e) => {
+                setCategory(e.target.value as EventCategory);
+                clearFieldError('category');
+              }}
+              onBlur={() => setTouched(prev => new Set([...prev, 'category']))}
             >
+              <option value="">请选择事件分类</option>
               {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
+            {getFieldError('category') && (
+              <div className="field-error">
+                <span className="error-icon">❌</span>
+                <span>{getFieldError('category')}</span>
+              </div>
+            )}
           </div>
 
-          <div className="form-group">
-            <label>优先级 *</label>
+          {/* 优先级 - 必填 */}
+          <div className={`form-group ${getFieldError('priority') ? 'has-error' : ''}`}>
+            <label className="form-label required">
+              优先级
+              <span className="required-mark">🔴 必填</span>
+            </label>
             <select
+              ref={priorityRef}
+              className={`form-input ${getFieldError('priority') ? 'error' : ''}`}
               value={priority}
-              onChange={(e) => setPriority(Number(e.target.value) as EventPriority)}
+              onChange={(e) => {
+                setPriority(Number(e.target.value) as EventPriority);
+                clearFieldError('priority');
+              }}
+              onBlur={() => setTouched(prev => new Set([...prev, 'priority']))}
             >
+              <option value="">请选择优先级</option>
               <option value={1}>第一优先级 - 重要且紧急</option>
               <option value={2}>第二优先级 - 重要</option>
               <option value={3}>第三优先级 - 一般</option>
               <option value={4}>第四优先级 - 不重要</option>
             </select>
+            {getFieldError('priority') && (
+              <div className="field-error">
+                <span className="error-icon">❌</span>
+                <span>{getFieldError('priority')}</span>
+              </div>
+            )}
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label>开始时间</label>
+              <label className="form-label optional">开始时间 <span className="optional-mark">（选填）</span></label>
               <input
                 type="datetime-local"
                 value={startTime}
@@ -215,7 +412,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
             </div>
 
             <div className="form-group">
-              <label>截止时间 (Deadline)</label>
+              <label className="form-label optional">截止时间 <span className="optional-mark">（选填）</span></label>
               <input
                 type="datetime-local"
                 value={deadline}
@@ -268,7 +465,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           </div>
 
           <div className="form-group">
-            <label>事件描述/备注</label>
+            <label className="form-label optional">事件描述/备注 <span className="optional-mark">（选填）</span></label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -278,7 +475,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           </div>
 
           <div className="form-group">
-            <label>完成步骤</label>
+            <label className="form-label optional">完成步骤 <span className="optional-mark">（选填）</span></label>
             <div className="steps-list">
               {steps.map((step, index) => (
                 <div key={step.id} className="step-item">

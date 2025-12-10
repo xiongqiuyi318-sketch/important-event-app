@@ -33,6 +33,41 @@
   margin-bottom: 1.5rem;
 }
 
+/* 必填标签样式 */
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  transition: color 0.2s;
+}
+
+.form-label.required {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #1a1a1a;
+}
+
+.form-label.optional {
+  font-weight: 400;
+  font-size: 0.95rem;
+  color: #666;
+}
+
+/* 必填标记 */
+.required-mark {
+  color: #d32f2f;
+  font-weight: bold;
+  margin-left: 8px;
+  font-size: 0.9rem;
+}
+
+/* 选填标记 */
+.optional-mark {
+  color: #999;
+  font-weight: normal;
+  font-size: 0.85rem;
+}
+
+/* 兼容旧的label样式 */
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
@@ -40,25 +75,76 @@
   color: #555;
 }
 
+/* 表单输入框基础样式 */
+.form-input,
 .form-group input[type="text"],
 .form-group input[type="datetime-local"],
 .form-group select,
 .form-group textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 2px solid #ddd;
   border-radius: 6px;
   font-size: 1rem;
   font-family: inherit;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
+  background: white;
 }
 
+.form-input:focus,
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 错误状态的输入框 */
+.form-input.error,
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error textarea {
+  border-color: #f44336;
+  background: #fff8f8;
+}
+
+.form-input.error:focus,
+.form-group.has-error input:focus,
+.form-group.has-error select:focus,
+.form-group.has-error textarea:focus {
+  border-color: #f44336;
+  box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+}
+
+/* 字段级错误提示 */
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #ffebee;
+  border-left: 3px solid #f44336;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #d32f2f;
+  animation: slideDown 0.3s ease-out;
+}
+
+.field-error .error-icon {
+  font-size: 1rem;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .form-group textarea {
@@ -236,6 +322,147 @@
   height: 16px;
 }
 
+/* ==================== 错误提示弹窗样式 ==================== */
+
+.error-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.error-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-modal-header {
+  background: linear-gradient(135deg, #ff6b6b 0%, #f44336 100%);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.error-modal-header h3 {
+  margin: 0;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.error-modal-content {
+  padding: 1.5rem;
+}
+
+.error-modal-content p {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.error-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.error-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: #fff8f8;
+  border-left: 3px solid #f44336;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.error-list li:hover {
+  background: #ffebee;
+  transform: translateX(4px);
+}
+
+.error-list li:last-child {
+  margin-bottom: 0;
+}
+
+.error-list .error-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-list .error-text {
+  flex: 1;
+  color: #d32f2f;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.error-modal-actions {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-error-ok {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-error-ok:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-error-ok:active {
+  transform: translateY(0);
+}
+
+/* ==================== 响应式样式 ==================== */
+
 @media (max-width: 768px) {
   .form-row {
     grid-template-columns: 1fr;
@@ -247,6 +474,19 @@
   
   .event-form-modal {
     padding: 1.5rem;
+  }
+  
+  .error-modal {
+    width: 95%;
+    max-width: none;
+  }
+  
+  .error-modal-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .form-label.required {
+    font-size: 1rem;
   }
 }
 

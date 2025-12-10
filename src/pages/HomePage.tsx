@@ -4,6 +4,7 @@ import { loadEvents, updateEvent, deleteEvent, reorderEvents } from '../utils/st
 import EventForm from '../components/EventForm';
 import QuadrantView from '../components/QuadrantView';
 import DataManager from '../components/DataManager';
+import CalendarSyncButton from '../components/CalendarSyncButton';
 import './HomePage.css';
 
 export default function HomePage() {
@@ -227,15 +228,18 @@ export default function HomePage() {
   return (
     <div className="home-page">
       <div className="page-header">
-        <button 
-          className="btn-primary" 
-          onClick={() => {
-            setEditingEvent(null);
-            setShowForm(true);
-          }}
-        >
-          + 新增事件
-        </button>
+        <div className="header-left">
+          <button 
+            className="btn-primary" 
+            onClick={() => {
+              setEditingEvent(null);
+              setShowForm(true);
+            }}
+          >
+            + 新增事件
+          </button>
+          <CalendarSyncButton variant="all" />
+        </div>
         <DataManager onDataChanged={loadEventsData} />
       </div>
 

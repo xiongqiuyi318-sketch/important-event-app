@@ -1,0 +1,328 @@
+/* ==================== 日历同步按钮 ==================== */
+
+.btn-calendar-sync {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-calendar-sync:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-calendar-sync:active {
+  transform: translateY(0);
+}
+
+/* ==================== 日历选项弹窗 ==================== */
+
+.calendar-options-modal,
+.instructions-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 540px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideUp 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.calendar-options-header,
+.instructions-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.calendar-options-header h3,
+.instructions-header h3 {
+  margin: 0;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.btn-close-modal {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-close-modal:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.calendar-options-content,
+.instructions-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.options-hint {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #666;
+}
+
+/* ==================== 日历选项列表 ==================== */
+
+.calendar-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.calendar-option {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.calendar-option:hover {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.calendar-option:active {
+  transform: translateX(2px);
+}
+
+.option-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.option-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.option-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.option-desc {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.option-arrow {
+  font-size: 1.5rem;
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+/* ==================== 提示说明 ==================== */
+
+.calendar-options-note {
+  background: linear-gradient(135deg, #f0f4ff 0%, #f8f4ff 100%);
+  border-left: 4px solid #667eea;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.calendar-options-note p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  color: #667eea;
+}
+
+.calendar-options-note ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  list-style: none;
+}
+
+.calendar-options-note li {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.35rem;
+  position: relative;
+}
+
+.calendar-options-note li:before {
+  content: "•";
+  color: #667eea;
+  font-weight: bold;
+  position: absolute;
+  left: -1rem;
+}
+
+.calendar-options-note li:last-child {
+  margin-bottom: 0;
+}
+
+/* ==================== 导入说明 ==================== */
+
+.instruction-section {
+  margin-bottom: 1.5rem;
+}
+
+.instruction-section h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.instruction-section ol,
+.instruction-section ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.instruction-section li {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.8;
+  margin-bottom: 0.5rem;
+}
+
+.instruction-section code {
+  background: #f5f5f5;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  color: #667eea;
+}
+
+.instructions-success {
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+  border-left: 4px solid #4caf50;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.instructions-success p {
+  margin: 0;
+  font-size: 1rem;
+  color: #2e7d32;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.instructions-actions {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-got-it {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 2.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-got-it:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-got-it:active {
+  transform: translateY(0);
+}
+
+/* ==================== 响应式 ==================== */
+
+@media (max-width: 768px) {
+  .calendar-options-modal,
+  .instructions-modal {
+    max-width: none;
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .calendar-options-header h3,
+  .instructions-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .calendar-option {
+    padding: 0.85rem 1rem;
+  }
+  
+  .option-icon {
+    font-size: 1.75rem;
+  }
+  
+  .option-name {
+    font-size: 0.95rem;
+  }
+  
+  .option-desc {
+    font-size: 0.8rem;
+  }
+  
+  .btn-calendar-sync {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
