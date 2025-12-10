@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { exportToFile, exportToText, importFromFile, importFromText, generateQRData, recordBackup } from '../utils/dataSync';
+import { QRCodeSVG } from 'qrcode.react';
 import './DataManager.css';
 
 interface DataManagerProps {
@@ -164,12 +165,14 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
                       </button>
                       {showQR && qrCodeData && (
                         <div className="qr-code-container">
-                          <div className="qr-code-placeholder">
-                            <p>📱 二维码功能</p>
-                            <p className="qr-note">数据已准备好：{qrCodeData.length} 字符</p>
-                            <p className="qr-note">建议使用"复制数据"或"导出文件"方式传输</p>
-                            <small>（二维码库未集成，使用上述方式更方便）</small>
-                          </div>
+                          <QRCodeSVG
+                            value={qrCodeData}
+                            size={256}
+                            level="M"
+                            includeMargin={true}
+                          />
+                          <p className="qr-note">使用手机扫描二维码导入数据</p>
+                          <p className="qr-note-small">数据大小：{qrCodeData.length} 字符</p>
                         </div>
                       )}
                     </div>

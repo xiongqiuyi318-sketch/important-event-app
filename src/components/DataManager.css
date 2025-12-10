@@ -233,10 +233,22 @@
 
 .qr-code-container {
   margin-top: 1rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 6px;
+  padding: 1.5rem;
+  background: white;
+  border: 2px solid #667eea;
+  border-radius: 8px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.qr-code-container svg {
+  display: block;
+  border: 8px solid white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .qr-code-placeholder {
@@ -252,8 +264,16 @@
 }
 
 .qr-note {
-  color: #666;
-  font-size: 0.9rem;
+  color: #333;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.25rem 0;
+}
+
+.qr-note-small {
+  color: #999;
+  font-size: 0.85rem;
+  margin: 0;
 }
 
 .qr-code-placeholder small {
@@ -296,5 +316,6 @@
     padding: 0.75rem 0.5rem;
   }
 }
+
 
 
