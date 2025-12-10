@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { exportToFile, exportToText, importFromFile, importFromText, generateQRData, recordBackup } from '../utils/dataSync';
 import { QRCodeSVG } from 'qrcode.react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import './DataManager.css';
 
 interface DataManagerProps {
@@ -14,8 +15,10 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
   const [showQR, setShowQR] = useState(false);
   const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   const handleExportFile = () => {
     exportToFile();
@@ -88,6 +91,62 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 3000);
   };
+
+  const handleStartScanner = () => {
+    setShowScanner(true);
+  };
+
+  const handleStopScanner = () => {
+    if (scannerRef.current) {
+      scannerRef.current.clear();
+      scannerRef.current = null;
+    }
+    setShowScanner(false);
+  };
+
+  useEffect(() => {
+    if (showScanner && !scannerRef.current) {
+      const scanner = new Html5QrcodeScanner(
+        "qr-reader",
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0
+        },
+        false
+      );
+
+      scanner.render(
+        (decodedText) => {
+          // 扫描成功
+          const result = importFromText(decodedText, importMode);
+          if (result.success) {
+            showMessage('success', result.message);
+            onDataChanged();
+            handleStopScanner();
+            setTimeout(() => {
+              setShowModal(false);
+            }, 1500);
+          } else {
+            showMessage('error', result.message);
+          }
+        },
+        (errorMessage) => {
+          // 扫描错误（可忽略）
+          console.log('Scan error:', errorMessage);
+        }
+      );
+
+      scannerRef.current = scanner;
+    }
+
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.clear();
+        scannerRef.current = null;
+      }
+    };
+  }, [showScanner, importMode, onDataChanged]);
 
   return (
     <>
@@ -226,6 +285,27 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
                   </div>
 
                   <div className="option-card">
+                    <div className="option-icon">📱</div>
+                    <div className="option-content">
+                      <h3>扫描二维码导入</h3>
+                      <p>使用摄像头扫描二维码</p>
+                      {!showScanner ? (
+                        <button className="btn-primary" onClick={handleStartScanner}>
+                          开始扫描
+                        </button>
+                      ) : (
+                        <>
+                          <div id="qr-reader" style={{ width: '100%' }}></div>
+                          <button className="btn-primary" onClick={handleStopScanner}>
+                            停止扫描
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="option-card">
+                    <div className="option-icon">📋</div>
                     <div className="option-content">
                       <h3>粘贴数据导入</h3>
                       <p>粘贴从其他设备复制的数据文本</p>

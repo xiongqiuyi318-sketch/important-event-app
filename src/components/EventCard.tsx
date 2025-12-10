@@ -39,6 +39,7 @@ export default function EventCard({
   onUpdateStepContent,
   onUpdateStepTime,
 }: EventCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [newStepContent, setNewStepContent] = useState('');
   const [showAddStep, setShowAddStep] = useState(false);
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
@@ -64,55 +65,75 @@ export default function EventCard({
       )
     : 0;
 
+  const completedSteps = event.steps.filter(s => s.completed).length;
+  const totalSteps = event.steps.length;
+
   return (
-    <div className="event-card">
-      <div className="event-card-header">
+    <div className={`event-card ${isExpanded ? 'expanded' : 'collapsed'}`}>
+      <div className="event-card-header" onClick={() => setIsExpanded(!isExpanded)}>
+        <button className="btn-expand" title={isExpanded ? '折叠' : '展开'}>
+          {isExpanded ? '▼' : '▶'}
+        </button>
         <div className="event-card-title-section">
           <h3 className="event-title">{event.title}</h3>
           <span className="event-category">{event.category}</span>
-        </div>
-        <div className="event-card-actions">
-          {!isFirst && (
-            <button 
-              className="btn-icon" 
-              onClick={onMoveUp}
-              title="上移"
-            >
-              ↑
-            </button>
+          {!isExpanded && event.deadline && (
+            <span className={`event-deadline-compact ${daysUntilDeadline < 3 ? 'urgent' : ''}`}>
+              📅 {format(new Date(event.deadline), 'MM-dd HH:mm', { locale: zhCN })}
+            </span>
           )}
-          {!isLast && (
-            <button 
-              className="btn-icon" 
-              onClick={onMoveDown}
-              title="下移"
-            >
-              ↓
-            </button>
+          {!isExpanded && totalSteps > 0 && (
+            <span className="event-progress-compact">
+              ✓ {completedSteps}/{totalSteps}
+            </span>
           )}
-          <button 
-            className="btn-icon btn-edit" 
-            onClick={() => onEdit(event)}
-            title="编辑"
-          >
-            ✏️
-          </button>
-          <button 
-            className="btn-icon btn-delete" 
-            onClick={() => onDelete(event.id)}
-            title="删除事件"
-          >
-            🗑️ 删除
-          </button>
         </div>
+        {isExpanded && (
+          <div className="event-card-actions" onClick={(e) => e.stopPropagation()}>
+            {!isFirst && (
+              <button 
+                className="btn-icon" 
+                onClick={onMoveUp}
+                title="上移"
+              >
+                ↑
+              </button>
+            )}
+            {!isLast && (
+              <button 
+                className="btn-icon" 
+                onClick={onMoveDown}
+                title="下移"
+              >
+                ↓
+              </button>
+            )}
+            <button 
+              className="btn-icon btn-edit" 
+              onClick={() => onEdit(event)}
+              title="编辑"
+            >
+              ✏️
+            </button>
+            <button 
+              className="btn-icon btn-delete" 
+              onClick={() => onDelete(event.id)}
+              title="删除事件"
+            >
+              🗑️ 删除
+            </button>
+          </div>
+        )}
       </div>
 
-      {event.description && (
-        <div className="event-description">{event.description}</div>
-      )}
+      {isExpanded && (
+        <>
+          {event.description && (
+            <div className="event-description">{event.description}</div>
+          )}
 
-      {(event.startTime || event.deadline) && (
-        <div className="event-meta">
+          {(event.startTime || event.deadline) && (
+            <div className="event-meta">
           {event.startTime && (
             <div className="meta-item">
               <strong>开始：</strong>
@@ -146,7 +167,7 @@ export default function EventCard({
         </div>
       )}
 
-      <div className="event-steps">
+          <div className="event-steps">
         <div className="steps-header">
           <strong>完成步骤：</strong>
           {!showAddStep && (
@@ -476,6 +497,8 @@ export default function EventCard({
           <div className="no-steps">暂无步骤</div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

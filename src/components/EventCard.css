@@ -7,6 +7,10 @@
   position: relative;
 }
 
+.event-card.collapsed {
+  padding: 0.5rem 1rem;
+}
+
 .event-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transform: translateY(-1px);
@@ -15,9 +19,37 @@
 .event-card-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.event-card.expanded .event-card-header {
   align-items: flex-start;
   margin-bottom: 0.75rem;
-  gap: 1rem;
+}
+
+.btn-expand {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.25rem;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.btn-expand:hover {
+  background: #e0e0e0;
+  color: #333;
 }
 
 .event-card-title-section {
@@ -41,6 +73,29 @@
   color: #1976d2;
   border-radius: 4px;
   font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.event-deadline-compact {
+  padding: 0.25rem 0.5rem;
+  background: #fff3e0;
+  color: #f57c00;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.event-deadline-compact.urgent {
+  background: #ffebee;
+  color: #f44336;
+}
+
+.event-progress-compact {
+  padding: 0.25rem 0.5rem;
+  background: #e8f5e9;
+  color: #4caf50;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
