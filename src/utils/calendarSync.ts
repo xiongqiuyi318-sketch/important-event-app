@@ -1,4 +1,4 @@
-import { Event, EventStep } from '../types';
+import { Event } from '../types';
 import { format } from 'date-fns';
 
 /**

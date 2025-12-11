@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Event } from '../types';
 import { 
-  addToCalendarSmart, 
   downloadSingleEventICS,
   downloadICS,
   generateGoogleCalendarUrl,

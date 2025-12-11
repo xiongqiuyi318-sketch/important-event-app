@@ -133,7 +133,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   // 当标题或描述变化时，自动生成步骤（仅新建事件）
   useEffect(() => {
     if (!event && category && category !== '' && (title || description)) {
-      const generatedSteps = generateStepsForCategory(category as EventCategory, title, description);
+      const generatedSteps = generateStepsForCategory(category, title, description);
       setSteps(generatedSteps);
     }
   }, [title, description, category, event]);
@@ -141,6 +141,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   // 当描述变化时（编辑模式），更新步骤
   useEffect(() => {
     if (!event) return;
+    if (!category || category === '') return;
     
     const originalDescription = event.description || '';
     if (description === originalDescription) return;
@@ -310,7 +311,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
               className={`form-input ${getFieldError('category') ? 'error' : ''}`}
               value={category}
               onChange={(e) => {
-                setCategory(e.target.value as EventCategory);
+                const value = e.target.value;
+                setCategory(value === '' ? '' : value as EventCategory);
                 clearFieldError('category');
               }}
               onBlur={() => setTouched(prev => new Set([...prev, 'category']))}
@@ -339,7 +341,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
               className={`form-input ${getFieldError('priority') ? 'error' : ''}`}
               value={priority}
               onChange={(e) => {
-                setPriority(Number(e.target.value) as EventPriority);
+                const value = e.target.value;
+                setPriority(value === '' ? '' : Number(value) as EventPriority);
                 clearFieldError('priority');
               }}
               onBlur={() => setTouched(prev => new Set([...prev, 'priority']))}
