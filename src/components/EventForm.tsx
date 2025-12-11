@@ -78,7 +78,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     }
     
     // 验证分类
-    if (!category || category === '') {
+    if (!category) {
       errors.push({
         field: 'category',
         label: '事件分类',
@@ -87,7 +87,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     }
     
     // 验证优先级
-    if (!priority || priority === '') {
+    if (!priority) {
       errors.push({
         field: 'priority',
         label: '优先级',
@@ -132,7 +132,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
 
   // 当标题或描述变化时，自动生成步骤（仅新建事件）
   useEffect(() => {
-    if (!event && category && category !== '' && (title || description)) {
+    if (!event && category && (title || description)) {
       const generatedSteps = generateStepsForCategory(category, title, description);
       setSteps(generatedSteps);
     }
@@ -141,7 +141,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   // 当描述变化时（编辑模式），更新步骤
   useEffect(() => {
     if (!event) return;
-    if (!category || category === '') return;
+    if (!category) return;
     
     const originalDescription = event.description || '';
     if (description === originalDescription) return;
