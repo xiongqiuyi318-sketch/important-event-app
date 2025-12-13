@@ -98,17 +98,6 @@
   transform: translateX(3px);
 }
 
-/* 说明文字 */
-.quadrant-intro {
-  padding: 0.75rem 1rem;
-  background: #fff8e1;
-  color: #f57c00;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
-  border-left: 3px solid #ff9800;
-}
-
 /* 操作栏 */
 .page-header {
   margin-bottom: 1rem;

@@ -129,11 +129,6 @@ export default function HomePage() {
         <DataManager onDataChanged={loadEventsData} />
       </div>
 
-      {/* 说明文字 */}
-      <div className="quadrant-intro">
-        ⚠️ 时间管理四象限根据事件的紧急程度和重要程度进行分类管理
-      </div>
-
       {showForm && (
         <EventForm
           event={editingEvent || undefined}
