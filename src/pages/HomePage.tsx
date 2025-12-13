@@ -17,11 +17,8 @@ export default function HomePage() {
 
   const loadEventsData = useCallback(() => {
     const loadedEvents = loadEvents();
-    // 过滤掉已完成和过期的事件
     const activeEvents = loadedEvents.filter(e => !e.completed && !e.expired);
     setEvents(activeEvents);
-    
-    // 获取已完成事件数量
     const completed = getCompletedEventsCount();
     setCompletedCount(completed);
   }, []);
@@ -36,13 +33,11 @@ export default function HomePage() {
     setEditingEvent(null);
   }, [loadEventsData]);
 
-  // 事件排序函数（按sortOrder优先，再按创建时间）
   const sortEvents = useCallback((a: Event, b: Event): number => {
     if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   }, []);
 
-  // 按优先级分组事件（使用useMemo优化性能）
   const eventsByPriority = useMemo(() => {
     const priorityGroups = {
       1: [] as Event[],
@@ -63,7 +58,6 @@ export default function HomePage() {
     };
   }, [events, sortEvents]);
 
-  // 统计数据
   const stats = useMemo(() => ({
     total: events.length,
     urgent: eventsByPriority[1].length,
@@ -74,58 +68,37 @@ export default function HomePage() {
 
   return (
     <div className="home-page">
-      {/* 统计栏 */}
-      <div className="stats-bar">
-        <div className="stats-left">
-          <div className="stats-title">
-            <span className="stats-icon">📋</span>
-            <span>待办事件</span>
-            <span className="stats-total">({stats.total})</span>
-          </div>
-          <div className="stats-breakdown">
-            <span className="stat-item urgent">
-              <span className="stat-dot" style={{ background: '#ff4444' }}></span>
-              紧急 {stats.urgent}
-            </span>
-            <span className="stat-item important">
-              <span className="stat-dot" style={{ background: '#ff8800' }}></span>
-              重要 {stats.important}
-            </span>
-            <span className="stat-item normal">
-              <span className="stat-dot" style={{ background: '#4488ff' }}></span>
-              一般 {stats.normal}
-            </span>
-            <span className="stat-item low">
-              <span className="stat-dot" style={{ background: '#888888' }}></span>
-              其他 {stats.low}
-            </span>
-          </div>
+      {/* 紧凑统计栏 */}
+      <div className="stats-bar-compact">
+        <div className="stats-info">
+          <span className="stats-label">📋 待办 ({stats.total})</span>
+          <span className="stats-dots">
+            <span className="dot-item" title="紧急">🔴{stats.urgent}</span>
+            <span className="dot-item" title="重要">🟠{stats.important}</span>
+            <span className="dot-item" title="一般">🔵{stats.normal}</span>
+            <span className="dot-item" title="其他">⚪{stats.low}</span>
+          </span>
         </div>
-        <div className="stats-right">
-          <button 
-            className="completed-link"
-            onClick={() => navigate('/completed')}
-          >
-            ✅ 已完成 ({completedCount})
-            <span className="arrow">→</span>
-          </button>
-        </div>
+        <button 
+          className="completed-btn"
+          onClick={() => navigate('/completed')}
+        >
+          ✅ 已完成 ({completedCount}) →
+        </button>
       </div>
 
-      {/* 操作栏 */}
-      <div className="page-header">
-        <div className="header-left">
-          <button 
-            className="btn-primary" 
-            onClick={() => {
-              setEditingEvent(null);
-              setShowForm(true);
-            }}
-          >
-            + 新建事件
-          </button>
-          <CalendarSyncButton variant="all" />
-        </div>
+      {/* 紧凑操作栏 */}
+      <div className="action-bar-compact">
+        <button 
+          className="btn-action" 
+          onClick={() => {
+            setEditingEvent(null);
+            setShowForm(true);
+          }}
+        >
+          + 新建
+        </button>
+        <CalendarSyncButton variant="all" />
         <DataManager onDataChanged={loadEventsData} />
       </div>
 

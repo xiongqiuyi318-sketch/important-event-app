@@ -10,80 +10,70 @@ html, body {
   flex-direction: column;
 }
 
-.app-header {
+/* 合并后的顶部栏 */
+.app-header-unified {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 0.75rem 2rem;
+  padding: 0.6rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.app-header h1 {
-  font-size: 1.4rem;
+.app-title {
+  font-size: 1.2rem;
   font-weight: 600;
   margin: 0;
-}
-
-.navigation {
-  background: white;
-  padding: 0 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 2rem;
-  flex-wrap: wrap;
+  white-space: nowrap;
 }
 
 .nav-links {
   display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
+  gap: 1.5rem;
+  flex: 1;
 }
 
-.navigation a {
-  padding: 1rem 0;
+.nav-links a {
+  color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
-  color: #666;
+  font-size: 0.9rem;
   font-weight: 500;
-  border-bottom: 3px solid transparent;
+  padding: 0.25rem 0;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.nav-links a:hover {
+  color: white;
+}
+
+.nav-links a.active {
+  color: white;
+  border-bottom-color: white;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
-.navigation a:hover {
-  color: #667eea;
-}
-
-.navigation a.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
-}
-
-.logout-btn {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
 .logout-btn:hover {
-  background: #d32f2f;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
-}
-
-.logout-btn:active {
-  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .app-main {
   flex: 1;
-  padding: 2rem;
+  padding: 1rem 1.5rem;
   max-width: 1600px;
   margin: 0 auto;
   width: 100%;
@@ -91,34 +81,29 @@ html, body {
 }
 
 @media (max-width: 768px) {
-  .app-header {
+  .app-header-unified {
     padding: 0.5rem 1rem;
-  }
-  
-  .app-header h1 {
-    font-size: 1.2rem;
-  }
-  
-  .navigation {
-    padding: 0 1rem;
     gap: 1rem;
+  }
+  
+  .app-title {
+    font-size: 1rem;
   }
   
   .nav-links {
     gap: 1rem;
   }
   
-  .navigation a {
-    padding: 0.75rem 0;
-    font-size: 0.9rem;
-  }
-  
-  .logout-btn {
-    padding: 0.4rem 0.8rem;
+  .nav-links a {
     font-size: 0.85rem;
   }
   
+  .logout-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+  }
+  
   .app-main {
-    padding: 1rem;
+    padding: 0.75rem;
   }
 }

@@ -8,23 +8,22 @@ import EventDetailPage from './pages/EventDetailPage';
 import CompletedEventsPage from './pages/CompletedEventsPage';
 import './App.css';
 
-function Navigation() {
+function Header() {
   const location = useLocation();
   
   const handleLogout = () => {
     if (window.confirm('确定要退出登录吗？退出后需要重新输入密码。')) {
-      // 清除所有认证信息
       sessionStorage.removeItem('app_authenticated');
       localStorage.removeItem('app_remember_password');
       localStorage.removeItem('app_saved_password_hash');
-      // 触发页面重新加载以显示登录界面
       window.location.reload();
     }
   };
   
   return (
-    <nav className="navigation">
-      <div className="nav-links">
+    <header className="app-header-unified">
+      <h1 className="app-title">重要事件备忘录</h1>
+      <nav className="nav-links">
         <Link 
           to="/" 
           className={location.pathname === '/' ? 'active' : ''}
@@ -37,7 +36,7 @@ function Navigation() {
         >
           历史
         </Link>
-      </div>
+      </nav>
       <button 
         className="logout-btn"
         onClick={handleLogout}
@@ -45,7 +44,7 @@ function Navigation() {
       >
         退出
       </button>
-    </nav>
+    </header>
   );
 }
 
@@ -56,10 +55,7 @@ function App() {
       <Router>
         <MonthlyCleanupReminder />
         <div className="app">
-          <header className="app-header">
-            <h1>重要事件备忘录</h1>
-          </header>
-          <Navigation />
+          <Header />
           <main className="app-main">
             <Routes>
               <Route path="/" element={<HomePage />} />

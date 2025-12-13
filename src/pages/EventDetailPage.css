@@ -1,398 +1,288 @@
 .event-detail-page {
   max-width: 900px;
   margin: 0 auto;
-  padding: 1rem;
 }
 
 .loading {
   text-align: center;
-  padding: 3rem;
+  padding: 2rem;
   color: #666;
 }
 
-.detail-header {
+/* 紧凑标题栏 */
+.detail-header-compact {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8f9ff;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
   flex-wrap: wrap;
-  gap: 1rem;
 }
 
-.btn-back {
+.btn-back-compact {
   background: #f5f5f5;
   border: 1px solid #ddd;
   color: #333;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.btn-back:hover {
+.btn-back-compact:hover {
   background: #e8e8e8;
-  border-color: #ccc;
 }
 
-.detail-actions {
+.title-with-tags {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
   flex-wrap: wrap;
 }
 
-.detail-actions button {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.2s;
-  border: 1px solid transparent;
+.detail-title-compact {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
 }
 
-.btn-edit {
+.tag-compact {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: white;
+}
+
+.tag-compact.category {
   background: #e3f2fd;
   color: #1976d2;
-  border-color: #bbdefb !important;
 }
 
-.btn-edit:hover {
+.detail-actions-compact {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.btn-action-compact {
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.btn-action-compact.edit {
+  background: #e3f2fd;
+  color: #1976d2;
+  border-color: #bbdefb;
+}
+
+.btn-action-compact.edit:hover {
   background: #bbdefb;
 }
 
-.btn-complete {
+.btn-action-compact.complete {
   background: #e8f5e9;
   color: #388e3c;
-  border-color: #c8e6c9 !important;
+  border-color: #c8e6c9;
 }
 
-.btn-complete:hover {
+.btn-action-compact.complete:hover {
   background: #c8e6c9;
 }
 
-.btn-delete {
+.btn-action-compact.delete {
   background: #ffebee;
   color: #d32f2f;
-  border-color: #ffcdd2 !important;
+  border-color: #ffcdd2;
 }
 
-.btn-delete:hover {
+.btn-action-compact.delete:hover {
   background: #ffcdd2;
 }
 
-.detail-content {
+/* 紧凑进度栏 */
+.progress-bar-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-}
-
-.detail-main {
-  padding: 1.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-.detail-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #222;
-  margin: 0 0 1rem 0;
-}
-
-.detail-title.overdue-text {
-  color: #d32f2f;
-}
-
-.detail-tags {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.tag {
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.priority-tag {
-  /* 颜色通过内联样式设置 */
-}
-
-.category-tag {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.completed-tag {
-  background: #e8f5e9;
-  color: #388e3c;
-}
-
-.detail-description {
-  margin: 1rem 0;
-  padding: 1rem;
-  background: #fafafa;
   border-radius: 8px;
-}
-
-.detail-description h3 {
-  font-size: 0.95rem;
-  color: #555;
-  margin: 0 0 0.5rem 0;
-}
-
-.detail-description p {
-  margin: 0;
-  color: #333;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-.detail-time-info {
-  margin: 1rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.time-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  flex-wrap: wrap;
-}
-
-.time-label {
-  color: #666;
-}
-
-.time-value {
-  color: #333;
-  font-weight: 500;
-}
-
-.time-value.overdue-text {
-  color: #d32f2f;
-}
-
-.days-badge {
-  margin-left: 0.5rem;
-  padding: 0.2rem 0.5rem;
-  background: #e3f2fd;
-  color: #1976d2;
-  border-radius: 4px;
-  font-size: 0.75rem;
-}
-
-.days-badge.overdue {
-  background: #ffebee;
-  color: #d32f2f;
-}
-
-.detail-progress {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
-  border-radius: 8px;
-}
-
-.progress-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  border: 1px solid #e8e8e8;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.progress-header h3 {
-  font-size: 0.95rem;
-  color: #555;
-  margin: 0;
-}
-
-.progress-percent {
-  font-size: 1.2rem;
-  font-weight: 700;
+.progress-label {
+  font-size: 0.85rem;
+  font-weight: 600;
   color: #1976d2;
+  white-space: nowrap;
 }
 
-.progress-bar-large {
-  height: 10px;
+.progress-track {
+  flex: 1;
+  min-width: 100px;
+  height: 8px;
   background: #e0e0e0;
-  border-radius: 5px;
+  border-radius: 4px;
   overflow: hidden;
 }
 
-.progress-fill-large {
+.progress-fill {
   height: 100%;
   background: linear-gradient(90deg, #4caf50, #81c784);
-  border-radius: 5px;
-  transition: width 0.3s ease;
+  border-radius: 4px;
+  transition: width 0.3s;
 }
 
-.progress-text {
-  margin: 0.5rem 0 0 0;
-  font-size: 0.85rem;
+.progress-count {
+  font-size: 0.8rem;
   color: #666;
+  white-space: nowrap;
 }
 
-.detail-steps {
-  padding: 1.5rem;
-}
-
-.steps-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.steps-header h3 {
-  font-size: 1.1rem;
-  color: #333;
-  margin: 0;
-}
-
-.btn-add-step {
+.btn-add-step-compact {
   background: #4caf50;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
   cursor: pointer;
-  font-size: 0.85rem;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 
-.btn-add-step:hover {
+.btn-add-step-compact:hover {
   background: #43a047;
 }
 
-.add-step-form {
+/* 添加步骤表单 */
+.add-step-form-compact {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   flex-wrap: wrap;
 }
 
-.add-step-form input {
+.add-step-form-compact input {
   flex: 1;
   min-width: 200px;
-  padding: 0.5rem;
+  padding: 0.4rem 0.6rem;
   border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
 }
 
-.add-step-form button {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+.add-step-form-compact button {
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   border: none;
 }
 
-.add-step-form button:first-of-type {
+.add-step-form-compact button:first-of-type {
   background: #4caf50;
   color: white;
 }
 
-.add-step-form button:last-of-type {
+.add-step-form-compact button:last-of-type {
   background: #f5f5f5;
   color: #666;
   border: 1px solid #ddd;
 }
 
-.steps-list {
+/* 步骤容器 */
+.steps-container {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  overflow: hidden;
+}
+
+.no-steps {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+  font-size: 0.9rem;
+}
+
+.steps-list-compact {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.step-item {
+.step-item-compact {
   display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  background: #fafafa;
-  border-radius: 8px;
-  margin-bottom: 0.75rem;
-  transition: all 0.2s;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.step-item:hover {
-  background: #f5f5f5;
+.step-item-compact:last-child {
+  border-bottom: none;
 }
 
-.step-item.completed {
-  background: #f8fff8;
+.step-item-compact.completed {
+  background: #f9fff9;
 }
 
-.step-item.step-overdue {
+.step-item-compact.overdue {
   background: #fff8f8;
-  border-left: 3px solid #d32f2f;
 }
 
-.step-number {
-  width: 28px;
-  height: 28px;
+.step-num {
+  width: 22px;
+  height: 22px;
   background: #1976d2;
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   flex-shrink: 0;
 }
 
-.step-item.completed .step-number {
+.step-item-compact.completed .step-num {
   background: #4caf50;
-}
-
-.step-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.step-main-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.step-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  flex: 1;
 }
 
 .step-checkbox-only {
   display: flex;
   align-items: center;
-  cursor: pointer;
   flex-shrink: 0;
 }
 
-.step-checkbox input[type="checkbox"],
 .step-checkbox-only input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
 }
 
 .step-text {
+  flex: 1;
+  min-width: 100px;
+  font-size: 0.9rem;
   color: #333;
-  font-size: 0.95rem;
-  line-height: 1.4;
 }
 
 .step-text.completed-text {
@@ -400,39 +290,34 @@
   color: #999;
 }
 
-.step-text.overdue-text {
-  color: #d32f2f;
-}
-
 .step-edit-container {
   display: flex;
   align-items: center;
   gap: 0.25rem;
   flex: 1;
+  min-width: 150px;
 }
 
 .step-edit-input {
   flex: 1;
-  padding: 0.4rem;
+  padding: 0.35rem;
   border: 1px solid #1976d2;
   border-radius: 4px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .btn-confirm-edit,
 .btn-cancel-edit {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
 }
 
 .btn-confirm-edit {
@@ -440,220 +325,168 @@
   color: white;
 }
 
-.btn-confirm-edit:hover {
-  background: #43a047;
-}
-
 .btn-cancel-edit {
   background: #f44336;
   color: white;
 }
 
-.btn-cancel-edit:hover {
-  background: #e53935;
-}
-
-.step-actions {
+.step-actions-compact {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.2rem;
   flex-shrink: 0;
 }
 
-.btn-step-action {
-  width: 28px;
-  height: 28px;
+.step-actions-compact button {
+  width: 24px;
+  height: 24px;
   border: 1px solid #ddd;
   background: white;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
   transition: all 0.2s;
 }
 
-.btn-step-action:hover:not(:disabled) {
+.step-actions-compact button:hover:not(:disabled) {
   background: #f0f0f0;
-  border-color: #bbb;
 }
 
-.btn-step-action:disabled {
-  opacity: 0.4;
+.step-actions-compact button:disabled {
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
-.btn-step-action.edit:hover {
-  background: #e3f2fd;
-  border-color: #1976d2;
-}
-
-.btn-step-action.delete {
+.step-actions-compact button:last-child {
   color: #d32f2f;
 }
 
-.btn-step-action.delete:hover {
+.step-actions-compact button:last-child:hover {
   background: #ffebee;
-  border-color: #d32f2f;
 }
 
-.step-time {
-  font-size: 0.8rem;
-  color: #1976d2;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.step-time.overdue {
-  color: #d32f2f;
-}
-
-.reminder-badge {
-  font-size: 0.9rem;
-}
-
-.step-status {
-  font-size: 0.85rem;
-  padding: 0.5rem;
-  background: #fff;
-  border-radius: 4px;
-  border-left: 3px solid #1976d2;
-}
-
-.status-label {
-  color: #666;
-}
-
-.status-text {
-  color: #333;
-}
-
-.step-meta-actions {
+/* 步骤详情行 */
+.step-meta-row {
+  width: 100%;
   display: flex;
   gap: 0.5rem;
+  padding-left: 54px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
-.btn-meta {
+.step-time-badge,
+.step-status-badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+}
+
+.step-time-badge.overdue {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.step-status-badge {
   background: #f5f5f5;
-  border: 1px dashed #ccc;
   color: #666;
-  padding: 0.25rem 0.75rem;
+}
+
+.btn-meta-compact {
+  background: none;
+  border: 1px dashed #ccc;
+  color: #888;
+  padding: 0.15rem 0.5rem;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   transition: all 0.2s;
 }
 
-.btn-meta:hover {
-  background: #e8e8e8;
+.btn-meta-compact:hover {
+  background: #f5f5f5;
   border-color: #999;
   color: #333;
 }
 
-.edit-time-form,
-.edit-status-form {
+.edit-inline-form {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.35rem;
   align-items: center;
   flex-wrap: wrap;
-  padding: 0.5rem;
-  background: #fff;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0;
 }
 
-.edit-time-form input[type="datetime-local"],
-.edit-status-form textarea {
-  padding: 0.4rem;
+.edit-inline-form input[type="datetime-local"],
+.edit-inline-form input[type="text"] {
+  padding: 0.25rem 0.4rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
-.edit-status-form textarea {
-  width: 100%;
-  min-width: 200px;
-  font-family: inherit;
-  resize: vertical;
-}
-
-.edit-time-form label {
+.edit-inline-form label {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.8rem;
+  gap: 0.2rem;
+  font-size: 0.75rem;
   color: #666;
 }
 
-.edit-time-form button,
-.edit-status-form button {
-  padding: 0.35rem 0.75rem;
+.edit-inline-form button {
+  padding: 0.2rem 0.5rem;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   border: none;
 }
 
-.edit-time-form button:first-of-type,
-.edit-status-form button:first-of-type {
+.edit-inline-form button:first-of-type {
   background: #4caf50;
   color: white;
 }
 
-.edit-time-form button:last-of-type,
-.edit-status-form button:last-of-type {
+.edit-inline-form button:last-of-type {
   background: #f5f5f5;
   color: #666;
   border: 1px solid #ddd;
 }
 
-.no-steps {
-  text-align: center;
-  color: #999;
-  padding: 2rem;
-  font-style: italic;
-}
-
+/* 响应式 */
 @media (max-width: 768px) {
-  .event-detail-page {
-    padding: 0.75rem;
-  }
-
-  .detail-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .btn-back {
-    align-self: flex-start;
-  }
-
-  .detail-actions {
-    justify-content: flex-end;
-  }
-
-  .detail-main,
-  .detail-steps {
-    padding: 1rem;
-  }
-
-  .detail-title {
-    font-size: 1.25rem;
-  }
-
-  .step-item {
-    padding: 0.75rem;
-  }
-
-  .step-main-row {
-    flex-direction: column;
+  .detail-header-compact {
+    padding: 0.5rem;
     gap: 0.5rem;
   }
 
-  .step-actions {
-    align-self: flex-end;
+  .detail-title-compact {
+    font-size: 1rem;
+    width: 100%;
+    order: -1;
+  }
+
+  .detail-tags-compact {
+    order: 0;
+  }
+
+  .detail-actions-compact {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .progress-bar-compact {
+    padding: 0.4rem 0.6rem;
+    gap: 0.5rem;
+  }
+
+  .progress-label {
+    font-size: 0.8rem;
+  }
+
+  .step-meta-row {
+    padding-left: 44px;
   }
 }
-
