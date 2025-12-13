@@ -1,0 +1,132 @@
+.cleanup-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.cleanup-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cleanup-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.cleanup-modal h2 {
+  font-size: 1.4rem;
+  color: #333;
+  margin: 0 0 1rem 0;
+}
+
+.cleanup-message {
+  color: #666;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.cleanup-message strong {
+  color: #1976d2;
+  font-size: 1.2rem;
+}
+
+.skip-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.skip-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.cleanup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cleanup-actions button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-view {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.btn-view:hover {
+  background: #bbdefb;
+}
+
+.btn-skip {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.btn-skip:hover {
+  background: #e8e8e8;
+}
+
+.btn-delete-all {
+  background: #d32f2f;
+  color: white;
+}
+
+.btn-delete-all:hover {
+  background: #c62828;
+}
+
+@media (max-width: 480px) {
+  .cleanup-modal {
+    padding: 1.5rem;
+  }
+
+  .cleanup-icon {
+    font-size: 3rem;
+  }
+
+  .cleanup-modal h2 {
+    font-size: 1.2rem;
+  }
+}
+

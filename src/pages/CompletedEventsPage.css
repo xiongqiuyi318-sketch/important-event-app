@@ -1,0 +1,297 @@
+.completed-events-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.completed-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-back {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  color: #333;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  background: #e8e8e8;
+  border-color: #ccc;
+}
+
+.completed-header h1 {
+  font-size: 1.4rem;
+  color: #333;
+  margin: 0;
+  flex: 1;
+}
+
+.completed-count {
+  background: #e8f5e9;
+  color: #388e3c;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.completed-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #fafafa;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.select-all-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.select-all-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.btn-delete-selected,
+.btn-delete-all {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-delete-selected {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.btn-delete-selected:hover:not(:disabled) {
+  background: #ffcdd2;
+}
+
+.btn-delete-selected:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-delete-all {
+  background: #d32f2f;
+  color: white;
+}
+
+.btn-delete-all:hover {
+  background: #c62828;
+}
+
+.no-completed {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.no-completed p {
+  color: #888;
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn-go-home {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.btn-go-home:hover {
+  background: #1565c0;
+}
+
+.completed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.completed-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+}
+
+.completed-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.item-checkbox {
+  padding-top: 0.25rem;
+}
+
+.item-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.item-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
+.item-priority {
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: white;
+  font-weight: 500;
+}
+
+.item-category {
+  padding: 0.15rem 0.5rem;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.item-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.item-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.btn-restore,
+.completed-item .btn-delete {
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.btn-restore {
+  background: #e3f2fd;
+  color: #1976d2;
+  border-color: #bbdefb;
+}
+
+.btn-restore:hover {
+  background: #bbdefb;
+}
+
+.completed-item .btn-delete {
+  background: #ffebee;
+  color: #d32f2f;
+  border-color: #ffcdd2;
+}
+
+.completed-item .btn-delete:hover {
+  background: #ffcdd2;
+}
+
+@media (max-width: 768px) {
+  .completed-events-page {
+    padding: 0.75rem;
+  }
+
+  .completed-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .completed-header h1 {
+    order: -1;
+  }
+
+  .completed-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .completed-item {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .item-checkbox {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+  }
+
+  .completed-item {
+    position: relative;
+    padding-left: 2.5rem;
+  }
+
+  .item-actions {
+    align-self: flex-end;
+  }
+}
+

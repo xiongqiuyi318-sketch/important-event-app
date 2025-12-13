@@ -136,3 +136,53 @@ export const reorderEvents = (id: string, direction: 'up' | 'down', priority: nu
   
   saveEvents(events);
 };
+
+// 加载所有事件（包括已完成的）
+export const loadAllEvents = (): Event[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (data) {
+      const parsed = JSON.parse(data);
+      
+      // 检查数据版本
+      const currentVersion = parsed.version || 0;
+      if (currentVersion < DATA_VERSION) {
+        const migrated = migrateData(parsed, currentVersion);
+        migrated.version = DATA_VERSION;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        parsed.events = migrated.events;
+      }
+      
+      // 更新过期状态
+      return (parsed.events || []).map((event: Event) => ({
+        ...event,
+        expired: checkEventExpired(event)
+      }));
+    }
+  } catch (error) {
+    console.error('Failed to load all events:', error);
+  }
+  return [];
+};
+
+// 获取已完成事件数量
+export const getCompletedEventsCount = (): number => {
+  const allEvents = loadAllEvents();
+  return allEvents.filter(e => e.completed).length;
+};
+
+// 批量删除事件
+export const deleteMultipleEvents = (ids: string[]): void => {
+  const allEvents = loadAllEvents();
+  const filtered = allEvents.filter(e => !ids.includes(e.id));
+  saveEvents(filtered);
+};
+
+// 删除所有已完成事件
+export const deleteAllCompletedEvents = (): number => {
+  const allEvents = loadAllEvents();
+  const completedCount = allEvents.filter(e => e.completed).length;
+  const activeEvents = allEvents.filter(e => !e.completed);
+  saveEvents(activeEvents);
+  return completedCount;
+};

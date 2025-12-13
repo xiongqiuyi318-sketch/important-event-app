@@ -1,7 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { exportToFile, exportToText, importFromFile, importFromText, generateQRData, recordBackup } from '../utils/dataSync';
-import { QRCodeSVG } from 'qrcode.react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { useState, useRef } from 'react';
+import { exportToFile, exportToText, importFromFile, importFromText, recordBackup } from '../utils/dataSync';
 import './DataManager.css';
 
 interface DataManagerProps {
@@ -11,14 +9,10 @@ interface DataManagerProps {
 export default function DataManager({ onDataChanged }: DataManagerProps) {
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
-  const [qrCodeData, setQrCodeData] = useState<string>('');
-  const [showQR, setShowQR] = useState(false);
   const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [showScanner, setShowScanner] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   const handleExportFile = () => {
     exportToFile();
@@ -34,16 +28,6 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
       navigator.clipboard.writeText(text);
       showMessage('success', '数据已复制到剪贴板！可以粘贴发送到其他设备。');
     }
-  };
-
-  const handleGenerateQR = () => {
-    const data = generateQRData();
-    if (data.length > 2000) {
-      showMessage('error', '数据量太大，无法生成二维码。请使用文件导出或删除一些已完成的事件。');
-      return;
-    }
-    setQrCodeData(data);
-    setShowQR(true);
   };
 
   const handleImportFile = async () => {
@@ -91,62 +75,6 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 3000);
   };
-
-  const handleStartScanner = () => {
-    setShowScanner(true);
-  };
-
-  const handleStopScanner = () => {
-    if (scannerRef.current) {
-      scannerRef.current.clear();
-      scannerRef.current = null;
-    }
-    setShowScanner(false);
-  };
-
-  useEffect(() => {
-    if (showScanner && !scannerRef.current) {
-      const scanner = new Html5QrcodeScanner(
-        "qr-reader",
-        { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0
-        },
-        false
-      );
-
-      scanner.render(
-        (decodedText) => {
-          // 扫描成功
-          const result = importFromText(decodedText, importMode);
-          if (result.success) {
-            showMessage('success', result.message);
-            onDataChanged();
-            handleStopScanner();
-            setTimeout(() => {
-              setShowModal(false);
-            }, 1500);
-          } else {
-            showMessage('error', result.message);
-          }
-        },
-        (errorMessage) => {
-          // 扫描错误（可忽略）
-          console.log('Scan error:', errorMessage);
-        }
-      );
-
-      scannerRef.current = scanner;
-    }
-
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear();
-        scannerRef.current = null;
-      }
-    };
-  }, [showScanner, importMode, onDataChanged]);
 
   return (
     <>
@@ -213,29 +141,6 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
                       />
                     </div>
                   </div>
-
-                  <div className="option-card">
-                    <div className="option-icon">📱</div>
-                    <div className="option-content">
-                      <h3>生成二维码</h3>
-                      <p>在其他设备上扫描二维码导入数据（仅未完成事件）</p>
-                      <button className="btn-primary" onClick={handleGenerateQR}>
-                        生成二维码
-                      </button>
-                      {showQR && qrCodeData && (
-                        <div className="qr-code-container">
-                          <QRCodeSVG
-                            value={qrCodeData}
-                            size={256}
-                            level="M"
-                            includeMargin={true}
-                          />
-                          <p className="qr-note">使用手机扫描二维码导入数据</p>
-                          <p className="qr-note-small">数据大小：{qrCodeData.length} 字符</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <div className="import-section">
@@ -285,26 +190,6 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
                   </div>
 
                   <div className="option-card">
-                    <div className="option-icon">📱</div>
-                    <div className="option-content">
-                      <h3>扫描二维码导入</h3>
-                      <p>使用摄像头扫描二维码</p>
-                      {!showScanner ? (
-                        <button className="btn-primary" onClick={handleStartScanner}>
-                          开始扫描
-                        </button>
-                      ) : (
-                        <>
-                          <div id="qr-reader" style={{ width: '100%' }}></div>
-                          <button className="btn-primary" onClick={handleStopScanner}>
-                            停止扫描
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="option-card">
                     <div className="option-icon">📋</div>
                     <div className="option-content">
                       <h3>粘贴数据导入</h3>
@@ -328,5 +213,3 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
     </>
   );
 }
-
-

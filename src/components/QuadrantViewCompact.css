@@ -1,0 +1,108 @@
+.quadrant-view-compact {
+  width: 100%;
+}
+
+.quadrant-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.quadrant-compact {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.quadrant-header-compact {
+  padding: 0.75rem 1rem;
+  border-bottom: 3px solid;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quadrant-icon {
+  font-size: 1rem;
+}
+
+.quadrant-header-compact h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+}
+
+.quadrant-compact[data-priority="1"] .quadrant-header-compact h2 {
+  color: #ff4444;
+}
+
+.event-count-compact {
+  color: #888;
+  font-size: 0.85rem;
+  font-weight: normal;
+}
+
+.quadrant-content-compact {
+  flex: 1;
+  padding: 0.75rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 400px;
+}
+
+.empty-quadrant-compact {
+  text-align: center;
+  color: #ccc;
+  padding: 2rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* 响应式布局 */
+@media (max-width: 1024px) {
+  .quadrant-grid-compact {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .quadrant-compact {
+    min-height: 250px;
+  }
+
+  .quadrant-content-compact {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .quadrant-grid-compact {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .quadrant-compact {
+    min-height: auto;
+  }
+
+  .quadrant-header-compact {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .quadrant-header-compact h2 {
+    font-size: 0.9rem;
+  }
+
+  .quadrant-content-compact {
+    padding: 0.5rem;
+    max-height: 250px;
+  }
+}
+

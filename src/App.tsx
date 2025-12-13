@@ -1,8 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import PasswordProtection from './components/PasswordProtection';
 import ReminderManager from './components/ReminderManager';
+import MonthlyCleanupReminder from './components/MonthlyCleanupReminder';
 import HomePage from './pages/HomePage';
 import HistoryPage from './pages/HistoryPage';
+import EventDetailPage from './pages/EventDetailPage';
+import CompletedEventsPage from './pages/CompletedEventsPage';
 import './App.css';
 
 function Navigation() {
@@ -51,6 +54,7 @@ function App() {
     <PasswordProtection>
       <ReminderManager />
       <Router>
+        <MonthlyCleanupReminder />
         <div className="app">
           <header className="app-header">
             <h1>重要事件备忘录</h1>
@@ -60,6 +64,8 @@ function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/event/:id" element={<EventDetailPage />} />
+              <Route path="/completed" element={<CompletedEventsPage />} />
             </Routes>
           </main>
         </div>

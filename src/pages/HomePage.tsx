@@ -1,202 +1,40 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Event, EventPriority } from '../types';
-import { loadEvents, updateEvent, deleteEvent, reorderEvents } from '../utils/storage';
+import { loadEvents, getCompletedEventsCount } from '../utils/storage';
 import EventForm from '../components/EventForm';
-import QuadrantView from '../components/QuadrantView';
+import QuadrantViewCompact from '../components/QuadrantViewCompact';
 import DataManager from '../components/DataManager';
 import CalendarSyncButton from '../components/CalendarSyncButton';
 import './HomePage.css';
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
+  const [completedCount, setCompletedCount] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-
-  useEffect(() => {
-    loadEventsData();
-  }, []);
 
   const loadEventsData = useCallback(() => {
     const loadedEvents = loadEvents();
     // 过滤掉已完成和过期的事件
     const activeEvents = loadedEvents.filter(e => !e.completed && !e.expired);
     setEvents(activeEvents);
+    
+    // 获取已完成事件数量
+    const completed = getCompletedEventsCount();
+    setCompletedCount(completed);
   }, []);
+
+  useEffect(() => {
+    loadEventsData();
+  }, [loadEventsData]);
 
   const handleEventSaved = useCallback(() => {
     loadEventsData();
     setShowForm(false);
     setEditingEvent(null);
   }, [loadEventsData]);
-
-  const handleEdit = useCallback((event: Event) => {
-    setEditingEvent(event);
-    setShowForm(true);
-  }, []);
-
-  const handleDelete = useCallback((id: string) => {
-    const event = events.find(e => e.id === id);
-    const eventTitle = event ? event.title : '此事件';
-    if (window.confirm(`确定要删除事件"${eventTitle}"吗？此操作无法撤销。`)) {
-      deleteEvent(id);
-      loadEventsData();
-    }
-  }, [events, loadEventsData]);
-
-  const handleToggleStep = useCallback((eventId: string, stepId: string) => {
-    const event = events.find(e => e.id === eventId);
-    if (!event) return;
-
-    const updatedSteps = event.steps.map(step =>
-      step.id === stepId ? { ...step, completed: !step.completed } : step
-    );
-
-    // 检查是否所有步骤都完成了
-    const allCompleted = updatedSteps.every(step => step.completed);
-    
-    updateEvent(eventId, {
-      steps: updatedSteps,
-      completed: allCompleted
-    });
-
-    loadEventsData();
-  }, [events, loadEventsData]);
-
-  const handleMoveEvent = useCallback((id: string, direction: 'up' | 'down', priority: number) => {
-    reorderEvents(id, direction, priority);
-    loadEventsData();
-  }, [loadEventsData]);
-
-  const handleAddStep = useCallback((eventId: string, content: string) => {
-    const event = events.find(e => e.id === eventId);
-    if (!event) return;
-
-    const newStep = {
-      id: `step-${Date.now()}`,
-      content,
-      completed: false,
-      order: event.steps.length
-    };
-
-    updateEvent(eventId, {
-      steps: [...event.steps, newStep]
-    });
-
-    loadEventsData();
-  }, [events, loadEventsData]);
-
-  const handleDeleteStep = useCallback((eventId: string, stepId: string) => {
-    const event = events.find(e => e.id === eventId);
-    if (!event) return;
-
-    const updatedSteps = event.steps.filter(step => step.id !== stepId)
-      .map((step, index) => ({ ...step, order: index }));
-
-    updateEvent(eventId, { steps: updatedSteps });
-    loadEventsData();
-  }, [events, loadEventsData]);
-
-  const handleUpdateStepStatus = useCallback((eventId: string, stepId: string, status: string) => {
-    const event = events.find(e => e.id === eventId);
-    if (!event) return;
-
-    const updatedSteps = event.steps.map(step =>
-      step.id === stepId ? { ...step, status: status || undefined } : step
-    );
-
-    updateEvent(eventId, { steps: updatedSteps });
-    loadEventsData();
-  }, [events, loadEventsData]);
-
-  const handleMoveStepUp = useCallback((eventId: string, stepId: string) => {
-    const event = events.find(e => e.id === eventId);
-    if (!event) return;
-
-    const sortedSteps = [...event.steps].sort((a, b) => a.order - b.order);
-    const stepIndex = sortedSteps.findIndex(s => s.id === stepId);
-    
-    if (stepIndex <= 0) return; // 已经是第一个
-
-    const currentStep = sortedSteps[stepIndex];
-    const previousStep = sortedSteps[stepIndex - 1];
-
-    const updatedSteps = event.steps.map(step => {
-      if (step.id === currentStep.id) {
-        return { ...step, order: previousStep.order };
-      } else if (step.id === previousStep.id) {
-        return { ...step, order: currentStep.order };
-      }
-      return step;
-    });
-
-    updateEvent(eventId, { steps: updatedSteps });
-    loadEventsData();
-  }, [events, loadEventsData]);
-
-  const handleMoveStepDown = useCallback((eventId: string, stepId: string) => {
-    const event = events.find(e => e.id === eventId);
-    if (!event) return;
-
-    const sortedSteps = [...event.steps].sort((a, b) => a.order - b.order);
-    const stepIndex = sortedSteps.findIndex(s => s.id === stepId);
-    
-    if (stepIndex < 0 || stepIndex >= sortedSteps.length - 1) return; // 已经是最后一个
-
-    const currentStep = sortedSteps[stepIndex];
-    const nextStep = sortedSteps[stepIndex + 1];
-
-    const updatedSteps = event.steps.map(step => {
-      if (step.id === currentStep.id) {
-        return { ...step, order: nextStep.order };
-      } else if (step.id === nextStep.id) {
-        return { ...step, order: currentStep.order };
-      }
-      return step;
-    });
-
-    updateEvent(eventId, { steps: updatedSteps });
-    loadEventsData();
-  }, [events, loadEventsData]);
-
-  const handleUpdateStepContent = useCallback((eventId: string, stepId: string, content: string) => {
-    const event = events.find(e => e.id === eventId);
-    if (!event) return;
-
-    if (!content.trim()) return; // 不允许空内容
-
-    const updatedSteps = event.steps.map(step =>
-      step.id === stepId ? { ...step, content: content.trim() } : step
-    );
-
-    updateEvent(eventId, { steps: updatedSteps });
-    loadEventsData();
-  }, [events, loadEventsData]);
-
-  const handleUpdateStepTime = useCallback((
-    eventId: string,
-    stepId: string,
-    scheduledTime: string | undefined,
-    reminderEnabled: boolean,
-    reminderType: 'sound' | 'vibration' | 'both'
-  ) => {
-    const event = events.find(e => e.id === eventId);
-    if (!event) return;
-
-    const updatedSteps = event.steps.map(step => {
-      if (step.id === stepId) {
-        return {
-          ...step,
-          scheduledTime: scheduledTime ? new Date(scheduledTime).toISOString() : undefined,
-          reminderEnabled: reminderEnabled || undefined,
-          reminderType: reminderEnabled ? reminderType : undefined,
-        };
-      }
-      return step;
-    });
-
-    updateEvent(eventId, { steps: updatedSteps });
-    loadEventsData();
-  }, [events, loadEventsData]);
 
   // 事件排序函数（按sortOrder优先，再按创建时间）
   const sortEvents = useCallback((a: Event, b: Event): number => {
@@ -225,8 +63,56 @@ export default function HomePage() {
     };
   }, [events, sortEvents]);
 
+  // 统计数据
+  const stats = useMemo(() => ({
+    total: events.length,
+    urgent: eventsByPriority[1].length,
+    important: eventsByPriority[2].length,
+    normal: eventsByPriority[3].length,
+    low: eventsByPriority[4].length,
+  }), [events, eventsByPriority]);
+
   return (
     <div className="home-page">
+      {/* 统计栏 */}
+      <div className="stats-bar">
+        <div className="stats-left">
+          <div className="stats-title">
+            <span className="stats-icon">📋</span>
+            <span>待办事件</span>
+            <span className="stats-total">({stats.total})</span>
+          </div>
+          <div className="stats-breakdown">
+            <span className="stat-item urgent">
+              <span className="stat-dot" style={{ background: '#ff4444' }}></span>
+              紧急 {stats.urgent}
+            </span>
+            <span className="stat-item important">
+              <span className="stat-dot" style={{ background: '#ff8800' }}></span>
+              重要 {stats.important}
+            </span>
+            <span className="stat-item normal">
+              <span className="stat-dot" style={{ background: '#4488ff' }}></span>
+              一般 {stats.normal}
+            </span>
+            <span className="stat-item low">
+              <span className="stat-dot" style={{ background: '#888888' }}></span>
+              其他 {stats.low}
+            </span>
+          </div>
+        </div>
+        <div className="stats-right">
+          <button 
+            className="completed-link"
+            onClick={() => navigate('/completed')}
+          >
+            ✅ 已完成 ({completedCount})
+            <span className="arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 操作栏 */}
       <div className="page-header">
         <div className="header-left">
           <button 
@@ -236,11 +122,16 @@ export default function HomePage() {
               setShowForm(true);
             }}
           >
-            + 新增事件
+            + 新建事件
           </button>
           <CalendarSyncButton variant="all" />
         </div>
         <DataManager onDataChanged={loadEventsData} />
+      </div>
+
+      {/* 说明文字 */}
+      <div className="quadrant-intro">
+        ⚠️ 时间管理四象限根据事件的紧急程度和重要程度进行分类管理
       </div>
 
       {showForm && (
@@ -254,20 +145,7 @@ export default function HomePage() {
         />
       )}
 
-      <QuadrantView
-        eventsByPriority={eventsByPriority}
-        onToggleStep={handleToggleStep}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onMoveEvent={handleMoveEvent}
-        onAddStep={handleAddStep}
-        onDeleteStep={handleDeleteStep}
-        onUpdateStepStatus={handleUpdateStepStatus}
-        onMoveStepUp={handleMoveStepUp}
-        onMoveStepDown={handleMoveStepDown}
-        onUpdateStepContent={handleUpdateStepContent}
-        onUpdateStepTime={handleUpdateStepTime}
-      />
+      <QuadrantViewCompact eventsByPriority={eventsByPriority} />
     </div>
   );
 }

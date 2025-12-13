@@ -339,6 +339,13 @@
   opacity: 1;
 }
 
+.step-edit-container {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+}
+
 .step-content-edit-input {
   flex: 1;
   padding: 0.4rem;
@@ -353,6 +360,40 @@
   box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
 }
 
+.btn-confirm-edit,
+.btn-cancel-edit {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-confirm-edit {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-confirm-edit:hover {
+  background: #43a047;
+}
+
+.btn-cancel-edit {
+  background: #f44336;
+  color: white;
+}
+
+.btn-cancel-edit:hover {
+  background: #e53935;
+}
+
 .step-checkbox {
   display: flex;
   align-items: center;
@@ -362,7 +403,15 @@
   user-select: none;
 }
 
-.step-checkbox input[type="checkbox"] {
+.step-checkbox-only {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.step-checkbox input[type="checkbox"],
+.step-checkbox-only input[type="checkbox"] {
   cursor: pointer;
   width: 18px;
   height: 18px;
@@ -376,6 +425,19 @@
 }
 
 .step-checkbox span.step-completed {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.step-text-content {
+  flex: 1;
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.step-text-content.step-completed {
   text-decoration: line-through;
   color: #999;
 }

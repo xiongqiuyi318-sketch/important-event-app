@@ -1,0 +1,137 @@
+.event-card-compact {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.event-card-compact:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  border-color: #d0d0d0;
+}
+
+.event-card-compact.overdue {
+  background: #fff5f5;
+  border-color: #ffcdd2;
+}
+
+.event-card-compact.overdue:hover {
+  border-color: #ef9a9a;
+}
+
+.compact-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.compact-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-title.overdue-text {
+  color: #d32f2f;
+}
+
+.compact-category {
+  padding: 0.2rem 0.5rem;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.compact-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.compact-deadline {
+  font-size: 0.75rem;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.compact-deadline.urgent {
+  color: #f57c00;
+  font-weight: 500;
+}
+
+.compact-deadline.overdue-text {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+.compact-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.progress-bar {
+  width: 50px;
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #81c784);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.7rem;
+  color: #888;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .event-card-compact {
+    padding: 0.6rem 0.8rem;
+  }
+
+  .compact-title {
+    font-size: 0.9rem;
+  }
+
+  .compact-category {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .compact-deadline {
+    font-size: 0.7rem;
+  }
+
+  .progress-bar {
+    width: 40px;
+  }
+}
+

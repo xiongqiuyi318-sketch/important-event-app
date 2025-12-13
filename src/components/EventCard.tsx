@@ -236,13 +236,15 @@ export default function EventCard({
                         </button>
                       )}
                     </div>
-                    <label className="step-checkbox">
+                    <label className="step-checkbox-only">
                       <input
                         type="checkbox"
                         checked={step.completed}
                         onChange={() => onToggleStep(event.id, step.id)}
                       />
-                      {editingStepContentId === step.id ? (
+                    </label>
+                    {editingStepContentId === step.id ? (
+                      <div className="step-edit-container">
                         <input
                           type="text"
                           value={editingStepContent}
@@ -259,21 +261,41 @@ export default function EventCard({
                           }}
                           className="step-content-edit-input"
                           autoFocus
-                          onClick={(e) => e.stopPropagation()}
                         />
-                      ) : (
-                        <span 
-                          className={step.completed ? 'step-completed' : ''}
-                          onDoubleClick={() => {
-                            setEditingStepContentId(step.id);
-                            setEditingStepContent(step.content);
+                        <button
+                          className="btn-confirm-edit"
+                          onClick={() => {
+                            onUpdateStepContent(event.id, step.id, editingStepContent.trim());
+                            setEditingStepContentId(null);
+                            setEditingStepContent('');
                           }}
-                          title="双击编辑"
+                          title="确认修改"
                         >
-                          {step.content}
-                        </span>
-                      )}
-                    </label>
+                          ✓
+                        </button>
+                        <button
+                          className="btn-cancel-edit"
+                          onClick={() => {
+                            setEditingStepContentId(null);
+                            setEditingStepContent('');
+                          }}
+                          title="取消修改"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <span 
+                        className={`step-text-content ${step.completed ? 'step-completed' : ''}`}
+                        onDoubleClick={() => {
+                          setEditingStepContentId(step.id);
+                          setEditingStepContent(step.content);
+                        }}
+                        title="双击编辑"
+                      >
+                        {step.content}
+                      </span>
+                    )}
                     <div className="step-actions">
                       <button
                         className="btn-edit-step-content"
