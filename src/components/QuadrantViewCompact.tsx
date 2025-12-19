@@ -43,16 +43,24 @@ export default function QuadrantViewCompact({ eventsByPriority, onEventReorder }
                 {events.length === 0 ? (
                   <div className="empty-quadrant-compact">暂无事件</div>
                 ) : (
-                  events.map((event, index) => (
-                    <EventCardCompact
-                      key={event.id}
-                      event={event}
-                      onMoveUp={onEventReorder ? () => onEventReorder(event.id, 'up', priority as EventPriority) : undefined}
-                      onMoveDown={onEventReorder ? () => onEventReorder(event.id, 'down', priority as EventPriority) : undefined}
-                      canMoveUp={index > 0}
-                      canMoveDown={index < events.length - 1}
-                    />
-                  ))
+                  events.map((event, index) => {
+                    // 计算是否可以移动
+                    // 最顶端（index 0）不能上移，但可以下移（如果有多个事件）
+                    // 最底部（最后一个）不能下移，但可以上移（如果有多个事件）
+                    const canMoveUp = index > 0 && events.length > 1;
+                    const canMoveDown = index < events.length - 1 && events.length > 1;
+                    
+                    return (
+                      <EventCardCompact
+                        key={event.id}
+                        event={event}
+                        onMoveUp={onEventReorder ? () => onEventReorder(event.id, 'up', priority as EventPriority) : undefined}
+                        onMoveDown={onEventReorder ? () => onEventReorder(event.id, 'down', priority as EventPriority) : undefined}
+                        canMoveUp={canMoveUp}
+                        canMoveDown={canMoveDown}
+                      />
+                    );
+                  })
                 )}
               </div>
             </div>

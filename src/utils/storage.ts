@@ -123,18 +123,27 @@ export const reorderEvents = (id: string, direction: 'up' | 'down', priority: nu
   const currentIndex = samePriorityEvents.findIndex(e => e.id === id);
   if (currentIndex === -1) return;
   
-  // 交换sortOrder
-  if (direction === 'up' && currentIndex > 0) {
-    const temp = samePriorityEvents[currentIndex].sortOrder;
-    samePriorityEvents[currentIndex].sortOrder = samePriorityEvents[currentIndex - 1].sortOrder;
-    samePriorityEvents[currentIndex - 1].sortOrder = temp;
-  } else if (direction === 'down' && currentIndex < samePriorityEvents.length - 1) {
-    const temp = samePriorityEvents[currentIndex].sortOrder;
-    samePriorityEvents[currentIndex].sortOrder = samePriorityEvents[currentIndex + 1].sortOrder;
-    samePriorityEvents[currentIndex + 1].sortOrder = temp;
-  }
+  // 边界检查：如果只有一个事件，无法排序
+  if (samePriorityEvents.length <= 1) return;
   
-  saveEvents(events);
+  // 交换sortOrder
+  if (direction === 'up') {
+    // 上移：与上一个事件交换
+    if (currentIndex > 0) {
+      const temp = samePriorityEvents[currentIndex].sortOrder;
+      samePriorityEvents[currentIndex].sortOrder = samePriorityEvents[currentIndex - 1].sortOrder;
+      samePriorityEvents[currentIndex - 1].sortOrder = temp;
+      saveEvents(events);
+    }
+  } else if (direction === 'down') {
+    // 下移：与下一个事件交换
+    if (currentIndex < samePriorityEvents.length - 1) {
+      const temp = samePriorityEvents[currentIndex].sortOrder;
+      samePriorityEvents[currentIndex].sortOrder = samePriorityEvents[currentIndex + 1].sortOrder;
+      samePriorityEvents[currentIndex + 1].sortOrder = temp;
+      saveEvents(events);
+    }
+  }
 };
 
 // 加载所有事件（包括已完成的）
