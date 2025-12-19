@@ -9,6 +9,7 @@ interface QuadrantViewCompactProps {
     3: Event[];
     4: Event[];
   };
+  onEventReorder?: (eventId: string, direction: 'up' | 'down', priority: EventPriority) => void;
 }
 
 const quadrantConfig = {
@@ -18,7 +19,7 @@ const quadrantConfig = {
   4: { title: '不紧急不重要', icon: '⚪', color: '#888888', priority: 4 as EventPriority },
 };
 
-export default function QuadrantViewCompact({ eventsByPriority }: QuadrantViewCompactProps) {
+export default function QuadrantViewCompact({ eventsByPriority, onEventReorder }: QuadrantViewCompactProps) {
   return (
     <div className="quadrant-view-compact">
       <div className="quadrant-grid-compact">
@@ -42,10 +43,14 @@ export default function QuadrantViewCompact({ eventsByPriority }: QuadrantViewCo
                 {events.length === 0 ? (
                   <div className="empty-quadrant-compact">暂无事件</div>
                 ) : (
-                  events.map((event) => (
+                  events.map((event, index) => (
                     <EventCardCompact
                       key={event.id}
                       event={event}
+                      onMoveUp={onEventReorder ? () => onEventReorder(event.id, 'up', priority as EventPriority) : undefined}
+                      onMoveDown={onEventReorder ? () => onEventReorder(event.id, 'down', priority as EventPriority) : undefined}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < events.length - 1}
                     />
                   ))
                 )}
@@ -57,4 +62,6 @@ export default function QuadrantViewCompact({ eventsByPriority }: QuadrantViewCo
     </div>
   );
 }
+
+
 

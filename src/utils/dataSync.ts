@@ -45,15 +45,78 @@ export const exportToText = (): string => {
 // 从文本导入
 export const importFromText = (text: string, mode: 'merge' | 'replace' = 'replace'): { success: boolean; message: string; count: number } => {
   try {
-    const data = JSON.parse(text) as ExportData;
+    // 检查文本是否为空
+    if (!text || text.trim().length === 0) {
+      return {
+        success: false,
+        message: '数据为空，请检查粘贴的内容',
+        count: 0,
+      };
+    }
+
+    // 检查数据大小（如果超过 10MB，可能有问题）
+    if (text.length > 10 * 1024 * 1024) {
+      return {
+        success: false,
+        message: `数据过大（${(text.length / 1024 / 1024).toFixed(2)}MB），请检查数据是否完整`,
+        count: 0,
+      };
+    }
+
+    // 检查 JSON 是否完整（简单检查括号匹配）
+    const openBraces = (text.match(/\{/g) || []).length;
+    const closeBraces = (text.match(/\}/g) || []).length;
+    const openBrackets = (text.match(/\[/g) || []).length;
+    const closeBrackets = (text.match(/\]/g) || []).length;
+    
+    if (openBraces !== closeBraces || openBrackets !== closeBrackets) {
+      return {
+        success: false,
+        message: '数据不完整，可能被截断了。请确保复制了完整的数据，或使用"导出为文件"功能重新导出',
+        count: 0,
+      };
+    }
+
+    let data: ExportData;
+    try {
+      data = JSON.parse(text) as ExportData;
+    } catch (parseError) {
+      // 提供更详细的解析错误信息
+      const errorMessage = parseError instanceof Error ? parseError.message : '未知错误';
+      // 检查是否是常见的 JSON 格式错误
+      if (errorMessage.includes('Unexpected end') || errorMessage.includes('end of data')) {
+        return {
+          success: false,
+          message: '数据不完整，可能被截断了。请确保复制了完整的数据，或使用"导出为文件"功能重新导出',
+          count: 0,
+        };
+      }
+      if (errorMessage.includes('Unexpected token')) {
+        return {
+          success: false,
+          message: `JSON 格式错误：${errorMessage}。请检查数据格式是否正确`,
+          count: 0,
+        };
+      }
+      return {
+        success: false,
+        message: `数据解析失败：${errorMessage}。请检查数据是否完整`,
+        count: 0,
+      };
+    }
     
     // 验证数据格式
     if (!data.events || !Array.isArray(data.events)) {
       return {
         success: false,
-        message: '数据格式不正确',
+        message: '数据格式不正确：缺少 events 数组',
         count: 0,
       };
+    }
+
+    // 验证事件数量是否与声明的一致
+    if (data.eventsCount !== undefined && data.events.length !== data.eventsCount) {
+      console.warn(`警告：声明的事件数量(${data.eventsCount})与实际数量(${data.events.length})不一致`);
     }
 
     if (mode === 'replace') {
@@ -81,9 +144,12 @@ export const importFromText = (text: string, mode: 'merge' | 'replace' = 'replac
       };
     }
   } catch (error) {
+    // 捕获其他未预期的错误
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    console.error('导入数据时发生错误:', error);
     return {
       success: false,
-      message: '数据解析失败，请检查数据格式',
+      message: `导入失败：${errorMessage}`,
       count: 0,
     };
   }
@@ -173,6 +239,8 @@ export const shouldShowBackupReminder = (): boolean => {
 export const recordBackup = () => {
   localStorage.setItem('lastBackupDate', new Date().toISOString());
 };
+
+
 
 
 

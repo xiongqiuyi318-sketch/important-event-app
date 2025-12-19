@@ -4,9 +4,19 @@ import './EventCardCompact.css';
 
 interface EventCardCompactProps {
   event: Event;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
-export default function EventCardCompact({ event }: EventCardCompactProps) {
+export default function EventCardCompact({ 
+  event, 
+  onMoveUp, 
+  onMoveDown, 
+  canMoveUp = false, 
+  canMoveDown = false 
+}: EventCardCompactProps) {
   const navigate = useNavigate();
 
   const daysUntilDeadline = event.deadline
@@ -25,6 +35,16 @@ export default function EventCardCompact({ event }: EventCardCompactProps) {
     navigate(`/event/${event.id}`);
   };
 
+  const handleMoveUp = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMoveUp?.();
+  };
+
+  const handleMoveDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMoveDown?.();
+  };
+
   return (
     <div 
       className={`event-card-compact ${isOverdue ? 'overdue' : ''}`}
@@ -35,6 +55,26 @@ export default function EventCardCompact({ event }: EventCardCompactProps) {
           {event.title}
         </h3>
         <span className="compact-category">{event.category}</span>
+        {(onMoveUp || onMoveDown) && (
+          <div className="sort-buttons" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="sort-btn" 
+              onClick={handleMoveUp} 
+              disabled={!canMoveUp}
+              title="上移"
+            >
+              ↑
+            </button>
+            <button 
+              className="sort-btn" 
+              onClick={handleMoveDown} 
+              disabled={!canMoveDown}
+              title="下移"
+            >
+              ↓
+            </button>
+          </div>
+        )}
       </div>
       
       <div className="compact-footer">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Event, EventPriority } from '../types';
-import { loadEvents, getCompletedEventsCount } from '../utils/storage';
+import { loadEvents, getCompletedEventsCount, reorderEvents } from '../utils/storage';
 import EventForm from '../components/EventForm';
 import QuadrantViewCompact from '../components/QuadrantViewCompact';
 import DataManager from '../components/DataManager';
@@ -31,6 +31,11 @@ export default function HomePage() {
     loadEventsData();
     setShowForm(false);
     setEditingEvent(null);
+  }, [loadEventsData]);
+
+  const handleEventReorder = useCallback((eventId: string, direction: 'up' | 'down', priority: EventPriority) => {
+    reorderEvents(eventId, direction, priority);
+    loadEventsData();
   }, [loadEventsData]);
 
   const sortEvents = useCallback((a: Event, b: Event): number => {
@@ -113,7 +118,10 @@ export default function HomePage() {
         />
       )}
 
-      <QuadrantViewCompact eventsByPriority={eventsByPriority} />
+      <QuadrantViewCompact 
+        eventsByPriority={eventsByPriority} 
+        onEventReorder={handleEventReorder}
+      />
     </div>
   );
 }
