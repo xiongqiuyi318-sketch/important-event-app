@@ -126,21 +126,39 @@ export const reorderEvents = (id: string, direction: 'up' | 'down', priority: nu
   // 边界检查：如果只有一个事件，无法排序
   if (samePriorityEvents.length <= 1) return;
   
-  // 交换sortOrder
+  // 重新分配 sortOrder，确保每个事件都有唯一的 sortOrder
   if (direction === 'up') {
-    // 上移：与上一个事件交换
+    // 上移：与上一个事件交换位置
     if (currentIndex > 0) {
-      const temp = samePriorityEvents[currentIndex].sortOrder;
-      samePriorityEvents[currentIndex].sortOrder = samePriorityEvents[currentIndex - 1].sortOrder;
-      samePriorityEvents[currentIndex - 1].sortOrder = temp;
+      // 交换数组中的位置
+      [samePriorityEvents[currentIndex], samePriorityEvents[currentIndex - 1]] = 
+        [samePriorityEvents[currentIndex - 1], samePriorityEvents[currentIndex]];
+      
+      // 重新分配 sortOrder（从 0 开始递增）
+      samePriorityEvents.forEach((event, index) => {
+        const eventInAll = events.find(e => e.id === event.id);
+        if (eventInAll) {
+          eventInAll.sortOrder = index;
+        }
+      });
+      
       saveEvents(events);
     }
   } else if (direction === 'down') {
-    // 下移：与下一个事件交换
+    // 下移：与下一个事件交换位置
     if (currentIndex < samePriorityEvents.length - 1) {
-      const temp = samePriorityEvents[currentIndex].sortOrder;
-      samePriorityEvents[currentIndex].sortOrder = samePriorityEvents[currentIndex + 1].sortOrder;
-      samePriorityEvents[currentIndex + 1].sortOrder = temp;
+      // 交换数组中的位置
+      [samePriorityEvents[currentIndex], samePriorityEvents[currentIndex + 1]] = 
+        [samePriorityEvents[currentIndex + 1], samePriorityEvents[currentIndex]];
+      
+      // 重新分配 sortOrder（从 0 开始递增）
+      samePriorityEvents.forEach((event, index) => {
+        const eventInAll = events.find(e => e.id === event.id);
+        if (eventInAll) {
+          eventInAll.sortOrder = index;
+        }
+      });
+      
       saveEvents(events);
     }
   }

@@ -37,12 +37,18 @@ export default function EventCardCompact({
 
   const handleMoveUp = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onMoveUp?.();
+    e.preventDefault();
+    if (canMoveUp && onMoveUp) {
+      onMoveUp();
+    }
   };
 
   const handleMoveDown = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onMoveDown?.();
+    e.preventDefault();
+    if (canMoveDown && onMoveDown) {
+      onMoveDown();
+    }
   };
 
   return (
