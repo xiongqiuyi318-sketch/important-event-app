@@ -17,6 +17,13 @@ export interface EventStep {
   completed: boolean;
   order: number;
   status?: string; // 步骤完成情况的描述
+  statusImage?: {
+    dataUrl: string; // e.g. data:image/jpeg;base64,...
+    name?: string;
+    type?: string;
+    size?: number; // bytes
+    addedAt: string; // ISO date string
+  }; // 步骤状态图片描述（可选）
   scheduledTime?: string; // ISO date string (optional) - 步骤计划时间
   reminderEnabled?: boolean; // 是否启用提醒
   reminderType?: 'sound' | 'vibration' | 'both'; // 提醒类型：铃声、振动或两者

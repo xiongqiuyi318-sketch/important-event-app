@@ -7,6 +7,78 @@ import { zhCN } from 'date-fns/locale';
 import EventForm from '../components/EventForm';
 import './EventDetailPage.css';
 
+type CompressOptions = {
+  maxBytes: number;
+  maxWidth: number;
+  maxHeight: number;
+  mimeType: 'image/jpeg' | 'image/webp';
+};
+
+function loadImageFromFile(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = (e) => {
+      URL.revokeObjectURL(url);
+      reject(e);
+    };
+    img.src = url;
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), mimeType, quality);
+  });
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result || ''));
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function compressImageToDataUrl(
+  file: File,
+  opts: CompressOptions
+): Promise<{ dataUrl: string; outBlob: Blob }> {
+  if (!file.type.startsWith('image/')) throw new Error('Not an image');
+
+  const img = await loadImageFromFile(file);
+  const scale = Math.min(1, opts.maxWidth / img.width, opts.maxHeight / img.height);
+  const targetW = Math.max(1, Math.round(img.width * scale));
+  const targetH = Math.max(1, Math.round(img.height * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = targetW;
+  canvas.height = targetH;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas not supported');
+  ctx.drawImage(img, 0, 0, targetW, targetH);
+
+  const qualities = [0.9, 0.82, 0.75, 0.68, 0.6, 0.52, 0.45, 0.38, 0.32, 0.26];
+  let lastBlob: Blob | null = null;
+
+  for (const q of qualities) {
+    const blob = await canvasToBlob(canvas, opts.mimeType, q);
+    lastBlob = blob;
+    if (blob.size <= opts.maxBytes) {
+      return { dataUrl: await blobToDataUrl(blob), outBlob: blob };
+    }
+  }
+
+  if (!lastBlob) throw new Error('Compression failed');
+  return { dataUrl: await blobToDataUrl(lastBlob), outBlob: lastBlob };
+}
+
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -18,6 +90,8 @@ export default function EventDetailPage() {
   const [editingStepContent, setEditingStepContent] = useState('');
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [editingStatus, setEditingStatus] = useState('');
+  const [editingStatusImage, setEditingStatusImage] = useState('');
+  const [editingStatusImageMeta, setEditingStatusImageMeta] = useState<{ name?: string; type?: string; size?: number } | null>(null);
   const [editingTimeId, setEditingTimeId] = useState<string | null>(null);
   const [editingTime, setEditingTime] = useState('');
   const [editingReminderEnabled, setEditingReminderEnabled] = useState(false);
@@ -112,12 +186,25 @@ export default function EventDetailPage() {
   };
 
   const handleUpdateStepStatus = (stepId: string) => {
+    const statusTrimmed = editingStatus.trim();
     const updatedSteps = event.steps.map(step =>
-      step.id === stepId ? { ...step, status: editingStatus.trim() || undefined } : step
+      step.id === stepId ? {
+        ...step,
+        status: statusTrimmed || undefined,
+        statusImage: editingStatusImage ? {
+          dataUrl: editingStatusImage,
+          name: editingStatusImageMeta?.name,
+          type: editingStatusImageMeta?.type,
+          size: editingStatusImageMeta?.size,
+          addedAt: new Date().toISOString()
+        } : undefined
+      } : step
     );
     updateEvent(event.id, { steps: updatedSteps });
     setEditingStatusId(null);
     setEditingStatus('');
+    setEditingStatusImage('');
+    setEditingStatusImageMeta(null);
     loadEventData();
   };
 
@@ -312,6 +399,20 @@ export default function EventDetailPage() {
                       {step.status && (
                         <span className="step-status-badge">📝 {step.status}</span>
                       )}
+                      {step.statusImage?.dataUrl && (
+                        <a
+                          className="step-status-image-link"
+                          href={step.statusImage.dataUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <img
+                            className="step-status-image-thumb"
+                            src={step.statusImage.dataUrl}
+                            alt="状态图片"
+                          />
+                        </a>
+                      )}
                       
                       {editingTimeId === step.id ? (
                         <div className="edit-inline-form">
@@ -352,8 +453,62 @@ export default function EventDetailPage() {
                             onChange={(e) => setEditingStatus(e.target.value)}
                             placeholder="状态描述..."
                           />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+
+                              try {
+                                const MAX_BYTES = 800 * 1024;
+                                const { dataUrl, outBlob } = await compressImageToDataUrl(file, {
+                                  maxBytes: MAX_BYTES,
+                                  maxWidth: 1600,
+                                  maxHeight: 1600,
+                                  mimeType: 'image/jpeg'
+                                });
+
+                                if (outBlob.size > MAX_BYTES) {
+                                  alert('图片太大，已尽力压缩仍超过 800KB。请换图或先压缩后再选。');
+                                  e.target.value = '';
+                                  return;
+                                }
+
+                                setEditingStatusImage(dataUrl);
+                                setEditingStatusImageMeta({ name: file.name, type: outBlob.type, size: outBlob.size });
+                              } catch {
+                                alert('图片处理失败，请换一张图片重试。');
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+
+                          {editingStatusImage && (
+                            <div className="status-image-preview-row">
+                              <img
+                                className="status-image-preview"
+                                src={editingStatusImage}
+                                alt="预览"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingStatusImage('');
+                                  setEditingStatusImageMeta(null);
+                                }}
+                              >
+                                移除图片
+                              </button>
+                            </div>
+                          )}
                           <button onClick={() => handleUpdateStepStatus(step.id)}>保存</button>
-                          <button onClick={() => { setEditingStatusId(null); setEditingStatus(''); }}>取消</button>
+                          <button onClick={() => {
+                            setEditingStatusId(null);
+                            setEditingStatus('');
+                            setEditingStatusImage('');
+                            setEditingStatusImageMeta(null);
+                          }}>取消</button>
                         </div>
                       ) : (
                         <button
@@ -361,6 +516,12 @@ export default function EventDetailPage() {
                           onClick={() => {
                             setEditingStatusId(step.id);
                             setEditingStatus(step.status || '');
+                            setEditingStatusImage(step.statusImage?.dataUrl || '');
+                            setEditingStatusImageMeta(
+                              step.statusImage
+                                ? { name: step.statusImage.name, type: step.statusImage.type, size: step.statusImage.size }
+                                : null
+                            );
                           }}
                         >
                           + 添加状态

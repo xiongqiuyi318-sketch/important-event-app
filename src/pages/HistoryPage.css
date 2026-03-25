@@ -50,6 +50,28 @@
   margin-bottom: 1rem;
 }
 
+.history-item-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.btn-download-confirm {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.btn-download-confirm:hover {
+  background: #1565c0;
+}
+
 .history-item-title {
   display: flex;
   align-items: center;
@@ -209,6 +231,31 @@
   flex: 1;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.step-status-image-history {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+}
+
+.step-status-image-history .step-status-label {
+  color: #666;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.step-status-image-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ddd;
 }
 
 

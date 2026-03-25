@@ -1,7 +1,7 @@
 import { Event, EventsState } from '../types';
 
 const STORAGE_KEY = 'important-events-memo';
-const DATA_VERSION = 1; // 数据版本号，当数据结构变化时递增
+const DATA_VERSION = 2; // 数据版本号，当数据结构变化时递增
 
 // 检查事件是否过期
 const checkEventExpired = (event: Event): boolean => {
@@ -12,11 +12,27 @@ const checkEventExpired = (event: Event): boolean => {
 };
 
 // 数据迁移函数（当数据结构变化时使用）
-const migrateData = (data: any, _version: number): EventsState => {
-  // 当前版本为1，无需迁移
-  // 未来如果数据结构变化，可以在这里添加迁移逻辑
-  // 例如：if (version < 2) { ... 迁移逻辑 ... }
-  return data;
+const migrateData = (data: any, version: number): EventsState => {
+  // 先保证基础结构正确，避免数据损坏导致崩溃
+  const safe: EventsState = {
+    events: Array.isArray(data?.events) ? data.events : [],
+    version: data?.version
+  };
+
+  // v1 -> v2：为步骤新增 statusImage 字段（不存在则保持 undefined）
+  if (version < 2) {
+    safe.events = safe.events.map((event: any) => ({
+      ...event,
+      steps: Array.isArray(event?.steps)
+        ? event.steps.map((step: any) => ({
+            ...step,
+            statusImage: step?.statusImage
+          }))
+        : []
+    }));
+  }
+
+  return safe;
 };
 
 export const loadEvents = (): Event[] => {
