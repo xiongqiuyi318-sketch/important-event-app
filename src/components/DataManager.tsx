@@ -4,9 +4,10 @@ import './DataManager.css';
 
 interface DataManagerProps {
   onDataChanged: () => void;
+  canEdit: boolean;
 }
 
-export default function DataManager({ onDataChanged }: DataManagerProps) {
+export default function DataManager({ onDataChanged, canEdit }: DataManagerProps) {
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
   const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
@@ -14,14 +15,14 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleExportFile = () => {
-    exportToFile();
+  const handleExportFile = async () => {
+    await exportToFile();
     recordBackup();
     showMessage('success', '数据已导出到文件！');
   };
 
-  const handleExportText = () => {
-    const text = exportToText();
+  const handleExportText = async () => {
+    const text = await exportToText();
     if (textAreaRef.current) {
       textAreaRef.current.value = text;
       textAreaRef.current.select();
@@ -31,6 +32,10 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
   };
 
   const handleImportFile = async () => {
+    if (!canEdit) {
+      showMessage('error', '访客模式不允许导入数据');
+      return;
+    }
     if (fileInputRef.current?.files?.[0]) {
       const file = fileInputRef.current.files[0];
       const result = await importFromFile(file, importMode);
@@ -52,14 +57,18 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
     }
   };
 
-  const handleImportText = () => {
+  const handleImportText = async () => {
+    if (!canEdit) {
+      showMessage('error', '访客模式不允许导入数据');
+      return;
+    }
     const text = textAreaRef.current?.value;
     if (!text) {
       showMessage('error', '请粘贴数据');
       return;
     }
 
-    const result = importFromText(text, importMode);
+    const result = await importFromText(text, importMode);
     if (result.success) {
       showMessage('success', result.message);
       onDataChanged();
@@ -119,7 +128,7 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
                     <div className="option-content">
                       <h3>导出为文件</h3>
                       <p>下载 JSON 文件，可保存到电脑或发送到其他设备</p>
-                      <button className="btn-primary" onClick={handleExportFile}>
+                      <button className="btn-primary" onClick={() => void handleExportFile()}>
                         下载文件
                       </button>
                     </div>
@@ -130,7 +139,7 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
                     <div className="option-content">
                       <h3>复制数据</h3>
                       <p>复制数据文本，通过微信等发送到其他设备</p>
-                      <button className="btn-primary" onClick={handleExportText}>
+                      <button className="btn-primary" onClick={() => void handleExportText()}>
                         复制到剪贴板
                       </button>
                       <textarea
@@ -199,9 +208,12 @@ export default function DataManager({ onDataChanged }: DataManagerProps) {
                         className="data-textarea"
                         placeholder="在这里粘贴数据..."
                       />
-                      <button className="btn-primary" onClick={handleImportText}>
+                      <button className="btn-primary" onClick={() => void handleImportText()}>
                         导入数据
                       </button>
+                      {!canEdit && (
+                        <p className="import-readonly-tip">访客模式仅支持导出，登录编辑者后才能导入。</p>
+                      )}
                     </div>
                   </div>
                 </div>

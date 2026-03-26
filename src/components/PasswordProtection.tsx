@@ -1,75 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useAccess } from '../context/AccessContext';
 import './PasswordProtection.css';
 
 interface PasswordProtectionProps {
   children: React.ReactNode;
 }
 
-// 访问密码：570508
-// 如需修改密码，请联系管理员更改此代码中的密码值
-const CORRECT_PASSWORD = '570508';
-const REMEMBER_PASSWORD_KEY = 'app_remember_password';
-const SAVED_PASSWORD_HASH_KEY = 'app_saved_password_hash';
-
-// 简单的密码哈希函数（用于本地存储验证）
-const hashPassword = (pwd: string): string => {
-  return btoa(pwd + 'salt_570508').substring(0, 32);
-};
-
 export default function PasswordProtection({ children }: PasswordProtectionProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { mode, loading, continueAsGuest, signInEditor } = useAccess();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberPassword, setRememberPassword] = useState(false);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    // 检查是否之前选择了记住密码（用于显示复选框状态）
-    const shouldRemember = localStorage.getItem(REMEMBER_PASSWORD_KEY) === 'true';
-    setRememberPassword(shouldRemember);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    // 检查是否已经通过验证
-    const sessionAuth = sessionStorage.getItem('app_authenticated');
-    if (sessionAuth === 'true') {
-      setIsAuthenticated(true);
+    if (!email.trim()) {
+      setError('请输入编辑者邮箱');
       return;
     }
 
-    // 如果选择了记住密码且保存的哈希匹配，自动登录
-    if (shouldRemember) {
-      const savedPasswordHash = localStorage.getItem(SAVED_PASSWORD_HASH_KEY);
-      const currentPasswordHash = hashPassword(CORRECT_PASSWORD);
-      if (savedPasswordHash === currentPasswordHash) {
-        setIsAuthenticated(true);
-        sessionStorage.setItem('app_authenticated', 'true');
-      }
-    }
-  }, []);
+    setSubmitting(true);
+    const result = await signInEditor(email.trim(), password);
+    setSubmitting(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (password === CORRECT_PASSWORD) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('app_authenticated', 'true');
-      
-      // 保存或清除记住密码设置
-      if (rememberPassword) {
-        localStorage.setItem(REMEMBER_PASSWORD_KEY, 'true');
-        localStorage.setItem(SAVED_PASSWORD_HASH_KEY, hashPassword(CORRECT_PASSWORD));
-      } else {
-        localStorage.removeItem(REMEMBER_PASSWORD_KEY);
-        localStorage.removeItem(SAVED_PASSWORD_HASH_KEY);
-      }
-      
-      setError('');
-      setPassword('');
-    } else {
-      setError('密码错误，请重试');
-      setPassword('');
+    if (result.error) {
+      setError(result.error);
+      return;
     }
+
+    setError('');
+    setPassword('');
   };
 
-  if (isAuthenticated) {
+  if (loading) {
+    return (
+      <div className="password-protection">
+        <div className="password-container">
+          <div className="password-box">
+            <h2>重要事件备忘录</h2>
+            <p className="password-hint">正在检查登录状态...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'guest' || mode === 'editor') {
     return <>{children}</>;
   }
 
@@ -78,8 +56,19 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
       <div className="password-container">
         <div className="password-box">
           <h2>重要事件备忘录</h2>
-          <p className="password-hint">请输入密码以访问应用</p>
+          <p className="password-hint">访客可只读浏览，编辑者登录后可创建和修改事件</p>
           <form onSubmit={handleSubmit}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError('');
+              }}
+              placeholder="编辑者邮箱"
+              autoFocus
+              className="password-input"
+            />
             <input
               type="password"
               value={password}
@@ -87,24 +76,22 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
                 setPassword(e.target.value);
                 setError('');
               }}
-              placeholder="请输入访问密码"
-              autoFocus
+              placeholder="编辑者密码"
               className="password-input"
             />
             {error && <div className="password-error">{error}</div>}
-            <div className="remember-password">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={rememberPassword}
-                  onChange={(e) => setRememberPassword(e.target.checked)}
-                />
-                <span>记住密码（保存到本地）</span>
-              </label>
+            <div className="auth-actions">
+              <button type="submit" className="password-submit" disabled={submitting}>
+                {submitting ? '登录中...' : '编辑者登录'}
+              </button>
+              <button
+                type="button"
+                className="password-submit secondary"
+                onClick={continueAsGuest}
+              >
+                访客进入（只读）
+              </button>
             </div>
-            <button type="submit" className="password-submit">
-              进入应用
-            </button>
           </form>
         </div>
       </div>

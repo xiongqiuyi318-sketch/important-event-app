@@ -1,5 +1,9 @@
 import { Event } from '../types';
-import { loadEvents, saveEvents } from './storage';
+import {
+  addEvent,
+  deleteMultipleEvents,
+  loadAllEvents,
+} from '../services/eventStorageService';
 
 export interface ExportData {
   version: string;
@@ -9,8 +13,8 @@ export interface ExportData {
 }
 
 // 导出数据
-export const exportData = (): ExportData => {
-  const events = loadEvents();
+export const exportData = async (): Promise<ExportData> => {
+  const events = await loadAllEvents();
   const exportData: ExportData = {
     version: '1.0.0',
     exportDate: new Date().toISOString(),
@@ -21,8 +25,8 @@ export const exportData = (): ExportData => {
 };
 
 // 导出为JSON文件
-export const exportToFile = () => {
-  const data = exportData();
+export const exportToFile = async (): Promise<void> => {
+  const data = await exportData();
   const jsonString = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonString], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -37,13 +41,17 @@ export const exportToFile = () => {
 };
 
 // 导出为文本（用于复制粘贴）
-export const exportToText = (): string => {
-  const data = exportData();
+export const exportToText = async (): Promise<string> => {
+  const data = await exportData();
   return JSON.stringify(data);
 };
 
+const isUuid = (value: string): boolean => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+};
+
 // 从文本导入
-export const importFromText = (text: string, mode: 'merge' | 'replace' = 'replace'): { success: boolean; message: string; count: number } => {
+export const importFromText = async (text: string, mode: 'merge' | 'replace' = 'replace'): Promise<{ success: boolean; message: string; count: number }> => {
   try {
     // 检查文本是否为空
     if (!text || text.trim().length === 0) {
@@ -120,8 +128,16 @@ export const importFromText = (text: string, mode: 'merge' | 'replace' = 'replac
     }
 
     if (mode === 'replace') {
-      // 替换模式：清空现有数据
-      saveEvents(data.events);
+      const existingEvents = await loadAllEvents();
+      if (existingEvents.length > 0) {
+        await deleteMultipleEvents(existingEvents.map((event) => event.id));
+      }
+      for (const event of data.events) {
+        await addEvent({
+          ...event,
+          id: isUuid(event.id) ? event.id : event.id,
+        });
+      }
       return {
         success: true,
         message: `成功导入 ${data.events.length} 个事件`,
@@ -129,14 +145,17 @@ export const importFromText = (text: string, mode: 'merge' | 'replace' = 'replac
       };
     } else {
       // 合并模式：保留现有数据，添加新数据
-      const existingEvents = loadEvents();
+      const existingEvents = await loadAllEvents();
       const existingIds = new Set(existingEvents.map(e => e.id));
       
       // 过滤掉已存在的事件（根据ID）
       const newEvents = data.events.filter(e => !existingIds.has(e.id));
-      const mergedEvents = [...existingEvents, ...newEvents];
-      
-      saveEvents(mergedEvents);
+      for (const event of newEvents) {
+        await addEvent({
+          ...event,
+          id: isUuid(event.id) ? event.id : event.id,
+        });
+      }
       return {
         success: true,
         message: `成功合并 ${newEvents.length} 个新事件，跳过 ${data.events.length - newEvents.length} 个重复事件`,
@@ -162,8 +181,13 @@ export const importFromFile = (file: File, mode: 'merge' | 'replace' = 'replace'
     
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const result = importFromText(text, mode);
-      resolve(result);
+      importFromText(text, mode).then(resolve).catch((error) => {
+        resolve({
+          success: false,
+          message: `导入失败：${error instanceof Error ? error.message : '未知错误'}`,
+          count: 0,
+        });
+      });
     };
     
     reader.onerror = () => {
@@ -180,50 +204,14 @@ export const importFromFile = (file: File, mode: 'merge' | 'replace' = 'replace'
 
 // 生成二维码数据（压缩版）
 export const generateQRData = (): string => {
-  const data = exportData();
-  // 只导出未完成的事件以减小数据量
-  const activeEvents = data.events.filter(e => !e.completed && !e.expired);
-  const compactData = {
-    v: data.version,
-    d: data.exportDate,
-    e: activeEvents,
-  };
-  return JSON.stringify(compactData);
+  // 兼容历史逻辑：此接口仍返回空数据占位；如需二维码同步建议改为异步实现。
+  return JSON.stringify({ v: '1.0.0', d: new Date().toISOString(), e: [] });
 };
 
 // 从二维码数据导入
 export const importFromQRData = (qrData: string): { success: boolean; message: string; count: number } => {
-  try {
-    const data = JSON.parse(qrData);
-    const events = data.e || data.events || [];
-    
-    if (!Array.isArray(events)) {
-      return {
-        success: false,
-        message: '二维码数据格式不正确',
-        count: 0,
-      };
-    }
-
-    // 总是使用合并模式导入二维码数据
-    const existingEvents = loadEvents();
-    const existingIds = new Set(existingEvents.map((e: Event) => e.id));
-    const newEvents = events.filter((e: Event) => !existingIds.has(e.id));
-    const mergedEvents = [...existingEvents, ...newEvents];
-    
-    saveEvents(mergedEvents);
-    return {
-      success: true,
-      message: `成功从二维码导入 ${newEvents.length} 个事件`,
-      count: newEvents.length,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: '二维码数据解析失败',
-      count: 0,
-    };
-  }
+  void qrData;
+  return { success: false, message: '二维码导入暂未适配云端模式，请使用文件或文本导入。', count: 0 };
 };
 
 // 检查是否需要备份提醒

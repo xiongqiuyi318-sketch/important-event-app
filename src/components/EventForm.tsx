@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Event, EventCategory, EventPriority } from '../types';
-import { addEvent, updateEvent, loadEvents } from '../utils/storage';
+import { addEvent, updateEvent, loadEvents } from '../services/eventStorageService';
 import { generateStepsForCategory, updateStepsFromDescription } from '../utils/stepGenerator';
 import './EventForm.css';
 
@@ -8,6 +8,7 @@ interface EventFormProps {
   event?: Event;
   onSave: () => void;
   onCancel: () => void;
+  canEdit?: boolean;
 }
 
 interface ValidationError {
@@ -21,7 +22,7 @@ const categories: EventCategory[] = [
   '项目开发', '活动策划', '机械维修', '其他'
 ];
 
-export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
+export default function EventForm({ event, onSave, onCancel, canEdit = false }: EventFormProps) {
   // 表单数据状态 - 改成强制选择（无默认值）
   const [title, setTitle] = useState(event?.title || '');
   const [description, setDescription] = useState(event?.description || '');
@@ -174,8 +175,12 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     setSteps(steps.filter(s => s.id !== stepId).map((s, index) => ({ ...s, order: index })));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEdit) {
+      alert('访客模式不可创建或编辑事件');
+      return;
+    }
 
     // 执行验证
     const errors = validateForm();
@@ -193,6 +198,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     }
 
     // 验证通过：保存数据
+    const currentEvents = await loadEvents();
     const eventData: Event = {
       id: event?.id || `event-${Date.now()}`,
       title: title.trim(),
@@ -205,7 +211,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
       createdAt: event?.createdAt || new Date().toISOString(),
       completed: event?.completed || false,
       expired: false,
-      sortOrder: event?.sortOrder || loadEvents().filter(e => e.priority === priority).length,
+      sortOrder: event?.sortOrder || currentEvents.filter(e => e.priority === priority).length,
       startTimeReminderEnabled: startTime && startTimeReminderEnabled ? startTimeReminderEnabled : undefined,
       startTimeReminderType: startTime && startTimeReminderEnabled ? startTimeReminderType : undefined,
       deadlineReminderEnabled: deadline && deadlineReminderEnabled ? deadlineReminderEnabled : undefined,
@@ -213,9 +219,9 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     };
 
     if (event) {
-      updateEvent(event.id, eventData);
+      await updateEvent(event.id, eventData);
     } else {
-      addEvent(eventData);
+      await addEvent(eventData);
     }
 
     onSave();
@@ -512,7 +518,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
             <button type="button" className="btn-cancel" onClick={onCancel}>
               取消
             </button>
-            <button type="submit" className="btn-submit">
+            <button type="submit" className="btn-submit" disabled={!canEdit}>
               {event ? '更新' : '创建'}
             </button>
           </div>

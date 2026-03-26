@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Event } from '../types';
-import { loadEvents, deleteEvent } from '../utils/storage';
+import { useAccess } from '../context/AccessContext';
+import { loadEvents, deleteEvent } from '../services/eventStorageService';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import JSZip from 'jszip';
@@ -18,14 +19,15 @@ const hasAnyStatusImage = (event: Event): boolean => {
 };
 
 export default function HistoryPage() {
+  const { canEdit } = useAccess();
   const [events, setEvents] = useState<Event[]>([]);
 
   useEffect(() => {
-    loadHistoryEvents();
+    void loadHistoryEvents();
   }, []);
 
-  const loadHistoryEvents = () => {
-    const allEvents = loadEvents();
+  const loadHistoryEvents = async () => {
+    const allEvents = await loadEvents();
     // 只显示已完成或过期的事件
     const historyEvents = allEvents
       .filter(e => e.completed || e.expired)
@@ -42,12 +44,13 @@ export default function HistoryPage() {
     setEvents(historyEvents);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    if (!canEdit) return;
     const event = events.find(e => e.id === id);
     const eventTitle = event ? event.title : '此事件';
     if (window.confirm(`确定要永久删除事件"${eventTitle}"吗？此操作无法撤销。`)) {
-      deleteEvent(id);
-      loadHistoryEvents();
+      await deleteEvent(id);
+      await loadHistoryEvents();
     }
   };
 
@@ -135,7 +138,8 @@ export default function HistoryPage() {
                   )}
                   <button 
                     className="btn-delete"
-                    onClick={() => handleDelete(event.id)}
+                    onClick={() => void handleDelete(event.id)}
+                    disabled={!canEdit}
                   >
                     删除
                   </button>

@@ -231,6 +231,12 @@
   flex: 1;
 }
 
+.import-readonly-tip {
+  margin-top: 0.5rem;
+  color: #b45309;
+  font-size: 0.85rem;
+}
+
 .qr-code-container {
   margin-top: 1rem;
   padding: 1.5rem;

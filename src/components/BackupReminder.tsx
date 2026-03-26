@@ -35,8 +35,8 @@ export default function BackupReminder() {
     };
   }, []);
 
-  const handleBackupNow = () => {
-    exportToFile();
+  const handleBackupNow = async () => {
+    await exportToFile();
     recordBackup();
     setShowReminder(false);
     setStorageWarning(false);
@@ -70,7 +70,7 @@ export default function BackupReminder() {
             <p>您有 {eventCount} 个事件，建议定期备份以防数据丢失</p>
           </div>
           <div className="reminder-actions">
-            <button className="btn-backup-now" onClick={handleBackupNow}>
+            <button className="btn-backup-now" onClick={() => void handleBackupNow()}>
               立即备份
             </button>
             <button className="btn-remind-later" onClick={handleRemindLater}>
@@ -92,7 +92,7 @@ export default function BackupReminder() {
             <p>数据量接近浏览器限制，请立即备份并清理已完成的事件</p>
           </div>
           <div className="reminder-actions">
-            <button className="btn-backup-now urgent" onClick={handleBackupNow}>
+            <button className="btn-backup-now urgent" onClick={() => void handleBackupNow()}>
               立即备份
             </button>
             <button className="btn-dismiss" onClick={() => setStorageWarning(false)}>

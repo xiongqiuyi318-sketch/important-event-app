@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCompletedEventsCount, deleteAllCompletedEvents } from '../utils/storage';
+import { useAccess } from '../context/AccessContext';
+import { getCompletedEventsCount, deleteAllCompletedEvents } from '../services/eventStorageService';
 import './MonthlyCleanupReminder.css';
 
 const CLEANUP_REMINDER_KEY = 'monthly_cleanup_reminder';
@@ -12,12 +13,13 @@ interface CleanupReminderState {
 
 export default function MonthlyCleanupReminder() {
   const navigate = useNavigate();
+  const { canEdit } = useAccess();
   const [showModal, setShowModal] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
   const [skipThisMonth, setSkipThisMonth] = useState(false);
 
   useEffect(() => {
-    checkShouldShowReminder();
+    void checkShouldShowReminder();
   }, []);
 
   const getCurrentMonth = (): string => {
@@ -25,7 +27,7 @@ export default function MonthlyCleanupReminder() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   };
 
-  const checkShouldShowReminder = () => {
+  const checkShouldShowReminder = async () => {
     const currentMonth = getCurrentMonth();
     const currentDay = new Date().getDate();
 
@@ -44,7 +46,7 @@ export default function MonthlyCleanupReminder() {
       }
 
       // 检查是否有已完成事件
-      const count = getCompletedEventsCount();
+      const count = await getCompletedEventsCount();
       if (count > 0) {
         setCompletedCount(count);
         setShowModal(true);
@@ -73,9 +75,10 @@ export default function MonthlyCleanupReminder() {
     setShowModal(false);
   };
 
-  const handleDeleteAll = () => {
+  const handleDeleteAll = async () => {
+    if (!canEdit) return;
     if (window.confirm(`确定要删除所有 ${completedCount} 个已完成事件吗？此操作无法撤销。`)) {
-      const deleted = deleteAllCompletedEvents();
+      const deleted = await deleteAllCompletedEvents();
       saveReminderState(true);
       setShowModal(false);
       alert(`已成功删除 ${deleted} 个已完成事件，释放了存储空间。`);
@@ -111,7 +114,7 @@ export default function MonthlyCleanupReminder() {
           <button className="btn-skip" onClick={handleSkip}>
             暂不删除
           </button>
-          <button className="btn-delete-all" onClick={handleDeleteAll}>
+          <button className="btn-delete-all" onClick={() => void handleDeleteAll()} disabled={!canEdit}>
             全部删除
           </button>
         </div>

@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Event, EventPriority } from '../types';
-import { loadEvents, getCompletedEventsCount, reorderEvents } from '../utils/storage';
+import { useAccess } from '../context/AccessContext';
+import { loadEvents, getCompletedEventsCount, reorderEvents } from '../services/eventStorageService';
 import EventForm from '../components/EventForm';
 import QuadrantViewCompact from '../components/QuadrantViewCompact';
 import DataManager from '../components/DataManager';
@@ -10,16 +11,17 @@ import './HomePage.css';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { canEdit } = useAccess();
   const [events, setEvents] = useState<Event[]>([]);
   const [completedCount, setCompletedCount] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
-  const loadEventsData = useCallback(() => {
-    const loadedEvents = loadEvents();
+  const loadEventsData = useCallback(async () => {
+    const loadedEvents = await loadEvents();
     const activeEvents = loadedEvents.filter(e => !e.completed && !e.expired);
     setEvents(activeEvents);
-    const completed = getCompletedEventsCount();
+    const completed = await getCompletedEventsCount();
     setCompletedCount(completed);
   }, []);
 
@@ -27,16 +29,21 @@ export default function HomePage() {
     loadEventsData();
   }, [loadEventsData]);
 
-  const handleEventSaved = useCallback(() => {
-    loadEventsData();
+  const handleEventSaved = useCallback(async () => {
+    await loadEventsData();
     setShowForm(false);
     setEditingEvent(null);
   }, [loadEventsData]);
 
-  const handleEventReorder = useCallback((eventId: string, direction: 'up' | 'down', priority: EventPriority) => {
-    reorderEvents(eventId, direction, priority);
-    loadEventsData();
-  }, [loadEventsData]);
+  const handleEventReorder = useCallback(
+    async (eventId: string, direction: 'up' | 'down', priority: EventPriority) => {
+      const ok = await reorderEvents(eventId, direction, priority);
+      if (ok) {
+        await loadEventsData();
+      }
+    },
+    [loadEventsData]
+  );
 
   const sortEvents = useCallback((a: Event, b: Event): number => {
     if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
@@ -96,7 +103,9 @@ export default function HomePage() {
       <div className="action-bar-compact">
         <button 
           className="btn-action" 
+          disabled={!canEdit}
           onClick={() => {
+            if (!canEdit) return;
             setEditingEvent(null);
             setShowForm(true);
           }}
@@ -104,13 +113,14 @@ export default function HomePage() {
           + 新建
         </button>
         <CalendarSyncButton variant="all" />
-        <DataManager onDataChanged={loadEventsData} />
+        <DataManager onDataChanged={() => void loadEventsData()} canEdit={canEdit} />
       </div>
 
       {showForm && (
         <EventForm
           event={editingEvent || undefined}
-          onSave={handleEventSaved}
+          onSave={() => void handleEventSaved()}
+          canEdit={canEdit}
           onCancel={() => {
             setShowForm(false);
             setEditingEvent(null);
@@ -121,6 +131,7 @@ export default function HomePage() {
       <QuadrantViewCompact 
         eventsByPriority={eventsByPriority} 
         onEventReorder={handleEventReorder}
+        canEdit={canEdit}
       />
     </div>
   );

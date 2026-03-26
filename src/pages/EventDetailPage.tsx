@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Event } from '../types';
-import { loadEvents, updateEvent, deleteEvent } from '../utils/storage';
+import { useAccess } from '../context/AccessContext';
+import { loadEvents, updateEvent, deleteEvent } from '../services/eventStorageService';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import EventForm from '../components/EventForm';
@@ -82,6 +83,7 @@ async function compressImageToDataUrl(
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { canEdit } = useAccess();
   const [event, setEvent] = useState<Event | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [newStepContent, setNewStepContent] = useState('');
@@ -96,8 +98,8 @@ export default function EventDetailPage() {
   const [editingTime, setEditingTime] = useState('');
   const [editingReminderEnabled, setEditingReminderEnabled] = useState(false);
 
-  const loadEventData = useCallback(() => {
-    const events = loadEvents();
+  const loadEventData = useCallback(async () => {
+    const events = await loadEvents();
     const found = events.find(e => e.id === id);
     if (found) {
       setEvent(found);
@@ -107,7 +109,7 @@ export default function EventDetailPage() {
   }, [id, navigate]);
 
   useEffect(() => {
-    loadEventData();
+    void loadEventData();
   }, [loadEventData]);
 
   if (!event) {
@@ -132,23 +134,26 @@ export default function EventDetailPage() {
     4: '#888888'
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    if (!canEdit) return;
     if (window.confirm(`确定要删除事件"${event.title}"吗？`)) {
-      deleteEvent(event.id);
+      await deleteEvent(event.id);
       navigate('/');
     }
   };
 
-  const handleToggleStep = (stepId: string) => {
+  const handleToggleStep = async (stepId: string) => {
+    if (!canEdit) return;
     const updatedSteps = event.steps.map(step =>
       step.id === stepId ? { ...step, completed: !step.completed } : step
     );
     const allCompleted = updatedSteps.every(step => step.completed);
-    updateEvent(event.id, { steps: updatedSteps, completed: allCompleted });
-    loadEventData();
+    await updateEvent(event.id, { steps: updatedSteps, completed: allCompleted });
+    await loadEventData();
   };
 
-  const handleAddStep = () => {
+  const handleAddStep = async () => {
+    if (!canEdit) return;
     if (newStepContent.trim()) {
       const newStep = {
         id: `step-${Date.now()}`,
@@ -156,36 +161,39 @@ export default function EventDetailPage() {
         completed: false,
         order: event.steps.length
       };
-      updateEvent(event.id, { steps: [...event.steps, newStep] });
+      await updateEvent(event.id, { steps: [...event.steps, newStep] });
       setNewStepContent('');
       setShowAddStep(false);
-      loadEventData();
+      await loadEventData();
     }
   };
 
-  const handleDeleteStep = (stepId: string) => {
+  const handleDeleteStep = async (stepId: string) => {
+    if (!canEdit) return;
     if (window.confirm('确定删除此步骤？')) {
       const updatedSteps = event.steps
         .filter(step => step.id !== stepId)
         .map((step, index) => ({ ...step, order: index }));
-      updateEvent(event.id, { steps: updatedSteps });
-      loadEventData();
+      await updateEvent(event.id, { steps: updatedSteps });
+      await loadEventData();
     }
   };
 
-  const handleUpdateStepContent = (stepId: string) => {
+  const handleUpdateStepContent = async (stepId: string) => {
+    if (!canEdit) return;
     if (editingStepContent.trim()) {
       const updatedSteps = event.steps.map(step =>
         step.id === stepId ? { ...step, content: editingStepContent.trim() } : step
       );
-      updateEvent(event.id, { steps: updatedSteps });
+      await updateEvent(event.id, { steps: updatedSteps });
       setEditingStepId(null);
       setEditingStepContent('');
-      loadEventData();
+      await loadEventData();
     }
   };
 
-  const handleUpdateStepStatus = (stepId: string) => {
+  const handleUpdateStepStatus = async (stepId: string) => {
+    if (!canEdit) return;
     const statusTrimmed = editingStatus.trim();
     const updatedSteps = event.steps.map(step =>
       step.id === stepId ? {
@@ -200,15 +208,16 @@ export default function EventDetailPage() {
         } : undefined
       } : step
     );
-    updateEvent(event.id, { steps: updatedSteps });
+    await updateEvent(event.id, { steps: updatedSteps });
     setEditingStatusId(null);
     setEditingStatus('');
     setEditingStatusImage('');
     setEditingStatusImageMeta(null);
-    loadEventData();
+    await loadEventData();
   };
 
-  const handleUpdateStepTime = (stepId: string) => {
+  const handleUpdateStepTime = async (stepId: string) => {
+    if (!canEdit) return;
     const updatedSteps = event.steps.map(step =>
       step.id === stepId ? {
         ...step,
@@ -216,14 +225,15 @@ export default function EventDetailPage() {
         reminderEnabled: editingReminderEnabled
       } : step
     );
-    updateEvent(event.id, { steps: updatedSteps });
+    await updateEvent(event.id, { steps: updatedSteps });
     setEditingTimeId(null);
     setEditingTime('');
     setEditingReminderEnabled(false);
-    loadEventData();
+    await loadEventData();
   };
 
-  const handleMoveStep = (stepId: string, direction: 'up' | 'down') => {
+  const handleMoveStep = async (stepId: string, direction: 'up' | 'down') => {
+    if (!canEdit) return;
     const sortedSteps = [...event.steps].sort((a, b) => a.order - b.order);
     const index = sortedSteps.findIndex(s => s.id === stepId);
     if (
@@ -236,12 +246,13 @@ export default function EventDetailPage() {
     sortedSteps[index].order = sortedSteps[swapIndex].order;
     sortedSteps[swapIndex].order = temp;
 
-    updateEvent(event.id, { steps: sortedSteps });
-    loadEventData();
+    await updateEvent(event.id, { steps: sortedSteps });
+    await loadEventData();
   };
 
-  const handleMarkComplete = () => {
-    updateEvent(event.id, { completed: true });
+  const handleMarkComplete = async () => {
+    if (!canEdit) return;
+    await updateEvent(event.id, { completed: true });
     navigate('/');
   };
 
@@ -252,9 +263,10 @@ export default function EventDetailPage() {
           event={event}
           onSave={() => {
             setShowEditForm(false);
-            loadEventData();
+            void loadEventData();
           }}
           onCancel={() => setShowEditForm(false)}
+          canEdit={canEdit}
         />
       </div>
     );
@@ -278,13 +290,13 @@ export default function EventDetailPage() {
           <span className="tag-compact category">{event.category}</span>
         </div>
         <div className="detail-actions-compact">
-          <button className="btn-action-compact edit" onClick={() => setShowEditForm(true)}>
+          <button className="btn-action-compact edit" onClick={() => setShowEditForm(true)} disabled={!canEdit}>
             ✏️ 编辑事件
           </button>
-          <button className="btn-action-compact complete" onClick={handleMarkComplete}>
+          <button className="btn-action-compact complete" onClick={() => void handleMarkComplete()} disabled={!canEdit}>
             ✓ 标记完成
           </button>
-          <button className="btn-action-compact delete" onClick={handleDelete}>
+          <button className="btn-action-compact delete" onClick={() => void handleDelete()} disabled={!canEdit}>
             🗑️ 删除
           </button>
         </div>
@@ -300,6 +312,7 @@ export default function EventDetailPage() {
         <button 
           className="btn-add-step-compact"
           onClick={() => setShowAddStep(true)}
+          disabled={!canEdit}
         >
           + 添加步骤
         </button>
@@ -314,7 +327,7 @@ export default function EventDetailPage() {
             onChange={(e) => setNewStepContent(e.target.value)}
             placeholder="输入步骤内容..."
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddStep();
+              if (e.key === 'Enter') void handleAddStep();
               if (e.key === 'Escape') {
                 setShowAddStep(false);
                 setNewStepContent('');
@@ -322,7 +335,7 @@ export default function EventDetailPage() {
             }}
             autoFocus
           />
-          <button onClick={handleAddStep}>确定</button>
+          <button onClick={() => void handleAddStep()} disabled={!canEdit}>确定</button>
           <button onClick={() => { setShowAddStep(false); setNewStepContent(''); }}>取消</button>
         </div>
       )}
@@ -344,7 +357,8 @@ export default function EventDetailPage() {
                       <input
                         type="checkbox"
                         checked={step.completed}
-                        onChange={() => handleToggleStep(step.id)}
+                        onChange={() => void handleToggleStep(step.id)}
+                        disabled={!canEdit}
                       />
                     </label>
                     
@@ -355,7 +369,7 @@ export default function EventDetailPage() {
                           value={editingStepContent}
                           onChange={(e) => setEditingStepContent(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleUpdateStepContent(step.id);
+                            if (e.key === 'Enter') void handleUpdateStepContent(step.id);
                             if (e.key === 'Escape') {
                               setEditingStepId(null);
                               setEditingStepContent('');
@@ -366,7 +380,8 @@ export default function EventDetailPage() {
                         />
                         <button
                           className="btn-confirm-edit"
-                          onClick={() => handleUpdateStepContent(step.id)}
+                          onClick={() => void handleUpdateStepContent(step.id)}
+                          disabled={!canEdit}
                         >✓</button>
                         <button
                           className="btn-cancel-edit"
@@ -383,10 +398,10 @@ export default function EventDetailPage() {
                     )}
 
                     <div className="step-actions-compact">
-                      <button onClick={() => handleMoveStep(step.id, 'up')} disabled={index === 0}>↑</button>
-                      <button onClick={() => handleMoveStep(step.id, 'down')} disabled={index === event.steps.length - 1}>↓</button>
-                      <button onClick={() => { setEditingStepId(step.id); setEditingStepContent(step.content); }}>✏️</button>
-                      <button onClick={() => handleDeleteStep(step.id)}>×</button>
+                      <button onClick={() => void handleMoveStep(step.id, 'up')} disabled={!canEdit || index === 0}>↑</button>
+                      <button onClick={() => void handleMoveStep(step.id, 'down')} disabled={!canEdit || index === event.steps.length - 1}>↓</button>
+                      <button onClick={() => { setEditingStepId(step.id); setEditingStepContent(step.content); }} disabled={!canEdit}>✏️</button>
+                      <button onClick={() => void handleDeleteStep(step.id)} disabled={!canEdit}>×</button>
                     </div>
 
                     {/* 步骤详情行 */}
@@ -429,7 +444,7 @@ export default function EventDetailPage() {
                             />
                             提醒
                           </label>
-                          <button onClick={() => handleUpdateStepTime(step.id)}>保存</button>
+                          <button onClick={() => void handleUpdateStepTime(step.id)} disabled={!canEdit}>保存</button>
                           <button onClick={() => { setEditingTimeId(null); setEditingTime(''); }}>取消</button>
                         </div>
                       ) : (
@@ -440,6 +455,7 @@ export default function EventDetailPage() {
                             setEditingTime(step.scheduledTime ? new Date(step.scheduledTime).toISOString().slice(0, 16) : '');
                             setEditingReminderEnabled(step.reminderEnabled || false);
                           }}
+                          disabled={!canEdit}
                         >
                           + 设置时间
                         </button>
@@ -502,7 +518,7 @@ export default function EventDetailPage() {
                               </button>
                             </div>
                           )}
-                          <button onClick={() => handleUpdateStepStatus(step.id)}>保存</button>
+                          <button onClick={() => void handleUpdateStepStatus(step.id)} disabled={!canEdit}>保存</button>
                           <button onClick={() => {
                             setEditingStatusId(null);
                             setEditingStatus('');
@@ -523,6 +539,7 @@ export default function EventDetailPage() {
                                 : null
                             );
                           }}
+                          disabled={!canEdit}
                         >
                           + 添加状态
                         </button>

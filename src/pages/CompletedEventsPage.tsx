@@ -1,25 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Event } from '../types';
-import { loadAllEvents, deleteEvent, updateEvent, deleteMultipleEvents } from '../utils/storage';
+import { useAccess } from '../context/AccessContext';
+import { loadAllEvents, deleteEvent, updateEvent, deleteMultipleEvents } from '../services/eventStorageService';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import './CompletedEventsPage.css';
 
 export default function CompletedEventsPage() {
   const navigate = useNavigate();
+  const { canEdit } = useAccess();
   const [completedEvents, setCompletedEvents] = useState<Event[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const loadData = useCallback(() => {
-    const allEvents = loadAllEvents();
+  const loadData = useCallback(async () => {
+    const allEvents = await loadAllEvents();
     const completed = allEvents.filter(e => e.completed);
     setCompletedEvents(completed);
     setSelectedIds(new Set());
   }, []);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
   const handleSelectAll = () => {
@@ -40,33 +42,37 @@ export default function CompletedEventsPage() {
     setSelectedIds(newSelected);
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
+    if (!canEdit) return;
     if (selectedIds.size === 0) return;
     
     if (window.confirm(`确定要删除选中的 ${selectedIds.size} 个事件吗？此操作无法撤销。`)) {
-      deleteMultipleEvents(Array.from(selectedIds));
-      loadData();
+      await deleteMultipleEvents(Array.from(selectedIds));
+      await loadData();
     }
   };
 
-  const handleDeleteAll = () => {
+  const handleDeleteAll = async () => {
+    if (!canEdit) return;
     if (completedEvents.length === 0) return;
     
     if (window.confirm(`确定要删除所有 ${completedEvents.length} 个已完成事件吗？此操作无法撤销。`)) {
-      deleteMultipleEvents(completedEvents.map(e => e.id));
-      loadData();
+      await deleteMultipleEvents(completedEvents.map(e => e.id));
+      await loadData();
     }
   };
 
-  const handleRestore = (id: string) => {
-    updateEvent(id, { completed: false });
-    loadData();
+  const handleRestore = async (id: string) => {
+    if (!canEdit) return;
+    await updateEvent(id, { completed: false });
+    await loadData();
   };
 
-  const handleDelete = (id: string, title: string) => {
+  const handleDelete = async (id: string, title: string) => {
+    if (!canEdit) return;
     if (window.confirm(`确定要删除事件"${title}"吗？此操作无法撤销。`)) {
-      deleteEvent(id);
-      loadData();
+      await deleteEvent(id);
+      await loadData();
     }
   };
 
@@ -101,19 +107,21 @@ export default function CompletedEventsPage() {
               type="checkbox"
               checked={selectedIds.size === completedEvents.length}
               onChange={handleSelectAll}
+              disabled={!canEdit}
             />
             全选
           </label>
           <button
             className="btn-delete-selected"
-            onClick={handleDeleteSelected}
-            disabled={selectedIds.size === 0}
+            onClick={() => void handleDeleteSelected()}
+            disabled={!canEdit || selectedIds.size === 0}
           >
             删除选中 ({selectedIds.size})
           </button>
           <button
             className="btn-delete-all"
-            onClick={handleDeleteAll}
+            onClick={() => void handleDeleteAll()}
+            disabled={!canEdit}
           >
             全部删除
           </button>
@@ -137,6 +145,7 @@ export default function CompletedEventsPage() {
                   type="checkbox"
                   checked={selectedIds.has(event.id)}
                   onChange={() => handleToggleSelect(event.id)}
+                  disabled={!canEdit}
                 />
               </div>
               
@@ -170,14 +179,16 @@ export default function CompletedEventsPage() {
               <div className="item-actions">
                 <button
                   className="btn-restore"
-                  onClick={() => handleRestore(event.id)}
+                  onClick={() => void handleRestore(event.id)}
+                  disabled={!canEdit}
                   title="恢复为未完成"
                 >
                   ↩️ 恢复
                 </button>
                 <button
                   className="btn-delete"
-                  onClick={() => handleDelete(event.id, event.title)}
+                  onClick={() => void handleDelete(event.id, event.title)}
+                  disabled={!canEdit}
                   title="删除事件"
                 >
                   🗑️ 删除

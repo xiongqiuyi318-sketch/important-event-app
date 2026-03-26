@@ -10,6 +10,7 @@ interface QuadrantViewCompactProps {
     4: Event[];
   };
   onEventReorder?: (eventId: string, direction: 'up' | 'down', priority: EventPriority) => void;
+  canEdit?: boolean;
 }
 
 const quadrantConfig = {
@@ -19,7 +20,7 @@ const quadrantConfig = {
   4: { title: '不紧急不重要', icon: '⚪', color: '#888888', priority: 4 as EventPriority },
 };
 
-export default function QuadrantViewCompact({ eventsByPriority, onEventReorder }: QuadrantViewCompactProps) {
+export default function QuadrantViewCompact({ eventsByPriority, onEventReorder, canEdit = false }: QuadrantViewCompactProps) {
   return (
     <div className="quadrant-view-compact">
       <div className="quadrant-grid-compact">
@@ -56,8 +57,8 @@ export default function QuadrantViewCompact({ eventsByPriority, onEventReorder }
                         event={event}
                         onMoveUp={onEventReorder ? () => onEventReorder(event.id, 'up', priority as EventPriority) : undefined}
                         onMoveDown={onEventReorder ? () => onEventReorder(event.id, 'down', priority as EventPriority) : undefined}
-                        canMoveUp={canMoveUp}
-                        canMoveDown={canMoveDown}
+                        canMoveUp={canEdit && canMoveUp}
+                        canMoveDown={canEdit && canMoveDown}
                       />
                     );
                   })

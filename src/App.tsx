@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import PasswordProtection from './components/PasswordProtection';
 import ReminderManager from './components/ReminderManager';
 import MonthlyCleanupReminder from './components/MonthlyCleanupReminder';
+import { useAccess } from './context/AccessContext';
 import HomePage from './pages/HomePage';
 import HistoryPage from './pages/HistoryPage';
 import EventDetailPage from './pages/EventDetailPage';
@@ -10,14 +11,14 @@ import './App.css';
 
 function Header() {
   const location = useLocation();
-  
-  const handleLogout = () => {
-    if (window.confirm('确定要退出登录吗？退出后需要重新输入密码。')) {
-      sessionStorage.removeItem('app_authenticated');
-      localStorage.removeItem('app_remember_password');
-      localStorage.removeItem('app_saved_password_hash');
-      window.location.reload();
+  const { canEdit, signOut } = useAccess();
+
+  const handleLogout = async () => {
+    if (!window.confirm('确定要退出当前模式吗？')) {
+      return;
     }
+    await signOut();
+    window.location.reload();
   };
   
   return (
@@ -37,10 +38,13 @@ function Header() {
           历史
         </Link>
       </nav>
+      <span className={`access-mode ${canEdit ? 'editor' : 'guest'}`}>
+        {canEdit ? '编辑者模式' : '访客只读'}
+      </span>
       <button 
         className="logout-btn"
         onClick={handleLogout}
-        title="退出登录"
+        title="切换模式"
       >
         退出
       </button>
