@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { AccessMode, AuthResult, AuthUser } from '../types/storage';
 
 const ACCESS_MODE_KEY = 'app_access_mode';
+const GUEST_MODE_VALUE = 'guest' as const;
 
 interface AccessContextValue {
   mode: AccessMode;
@@ -22,33 +23,71 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedMode = sessionStorage.getItem(ACCESS_MODE_KEY) as AccessMode;
-    if (savedMode === 'guest') {
-      setMode('guest');
-      setLoading(false);
-      return;
-    }
-
     if (!supabase) {
-      setMode(null);
-      setLoading(false);
-      return;
-    }
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setMode('editor');
-        setUser({ id: data.user.id, email: data.user.email || '' });
+      const savedMode = localStorage.getItem(ACCESS_MODE_KEY) as AccessMode;
+      if (savedMode === GUEST_MODE_VALUE) {
+        setMode(GUEST_MODE_VALUE);
       } else {
         setMode(null);
       }
       setLoading(false);
+      return;
+    }
+    const authClient = supabase.auth;
+
+    let isMounted = true;
+
+    const syncFromSession = async () => {
+      const { data, error } = await authClient.getSession();
+      if (!isMounted) {
+        return;
+      }
+
+      const sessionUser = error ? null : data.session?.user ?? null;
+      if (sessionUser) {
+        localStorage.removeItem(ACCESS_MODE_KEY);
+        setMode('editor');
+        setUser({ id: sessionUser.id, email: sessionUser.email || '' });
+      } else {
+        const savedMode = localStorage.getItem(ACCESS_MODE_KEY) as AccessMode;
+        setMode(savedMode === GUEST_MODE_VALUE ? GUEST_MODE_VALUE : null);
+        setUser(null);
+      }
+      setLoading(false);
+    };
+
+    const { data: authListener } = authClient.onAuthStateChange((event, session) => {
+      if (!isMounted) {
+        return;
+      }
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        if (session?.user) {
+          localStorage.removeItem(ACCESS_MODE_KEY);
+          setMode('editor');
+          setUser({ id: session.user.id, email: session.user.email || '' });
+        }
+        return;
+      }
+
+      if (event === 'SIGNED_OUT') {
+        const savedMode = localStorage.getItem(ACCESS_MODE_KEY) as AccessMode;
+        setMode(savedMode === GUEST_MODE_VALUE ? GUEST_MODE_VALUE : null);
+        setUser(null);
+      }
     });
+
+    syncFromSession();
+
+    return () => {
+      isMounted = false;
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const continueAsGuest = () => {
-    sessionStorage.setItem(ACCESS_MODE_KEY, 'guest');
-    setMode('guest');
+    localStorage.setItem(ACCESS_MODE_KEY, GUEST_MODE_VALUE);
+    setMode(GUEST_MODE_VALUE);
     setUser(null);
   };
 
@@ -62,15 +101,29 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
       return { user: null, error: error?.message || '登录失败' };
     }
 
-    const authUser = { id: data.user.id, email: data.user.email || email };
-    sessionStorage.setItem(ACCESS_MODE_KEY, 'editor');
+    let sessionUser: typeof data.user | null = data.session?.user ?? null;
+    if (!sessionUser) {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        return { user: null, error: sessionError.message || '登录成功但会话校验失败，请重试。' };
+      }
+      sessionUser = sessionData.session?.user ?? null;
+    }
+
+    if (!sessionUser) {
+      return { user: null, error: '登录成功但会话未建立，请刷新后重试。' };
+    }
+    const confirmedUser = sessionUser;
+
+    const authUser = { id: confirmedUser.id, email: confirmedUser.email || email };
+    localStorage.removeItem(ACCESS_MODE_KEY);
     setMode('editor');
     setUser(authUser);
     return { user: authUser, error: null };
   };
 
   const signOut = async () => {
-    sessionStorage.removeItem(ACCESS_MODE_KEY);
+    localStorage.removeItem(ACCESS_MODE_KEY);
     setMode(null);
     setUser(null);
     if (supabase) {
@@ -79,15 +132,18 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = useMemo(
-    () => ({
-      mode,
-      canEdit: mode === 'editor',
-      user,
-      loading,
-      continueAsGuest,
-      signInEditor,
-      signOut,
-    }),
+    () => {
+      const effectiveMode: AccessMode = user ? 'editor' : mode;
+      return {
+        mode: effectiveMode,
+        canEdit: Boolean(user),
+        user,
+        loading,
+        continueAsGuest,
+        signInEditor,
+        signOut,
+      };
+    },
     [loading, mode, user]
   );
 

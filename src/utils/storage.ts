@@ -1,7 +1,7 @@
 import { Event, EventsState } from '../types';
 
 const STORAGE_KEY = 'important-events-memo';
-const DATA_VERSION = 2; // 数据版本号，当数据结构变化时递增
+const DATA_VERSION = 3; // 数据版本号，当数据结构变化时递增
 
 // 检查事件是否过期
 const checkEventExpired = (event: Event): boolean => {
@@ -28,6 +28,27 @@ const migrateData = (data: any, version: number): EventsState => {
             ...step,
             statusImage: step?.statusImage
           }))
+        : []
+    }));
+  }
+
+  // v2 -> v3：为步骤新增 statusImages 数组，并兼容单图字段
+  if (version < 3) {
+    safe.events = safe.events.map((event: any) => ({
+      ...event,
+      steps: Array.isArray(event?.steps)
+        ? event.steps.map((step: any) => {
+            const legacyImage = step?.statusImage;
+            const images = Array.isArray(step?.statusImages)
+              ? step.statusImages.filter((img: any) => Boolean(img?.dataUrl)).slice(0, 3)
+              : legacyImage?.dataUrl
+                ? [legacyImage]
+                : [];
+            return {
+              ...step,
+              statusImages: images,
+            };
+          })
         : []
     }));
   }

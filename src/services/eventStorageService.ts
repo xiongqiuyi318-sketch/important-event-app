@@ -13,9 +13,19 @@ import {
 } from '../utils/storage';
 
 const ACCESS_MODE_KEY = 'app_access_mode';
+const GUEST_MODE_VALUE = 'guest';
 const PROVIDER = (import.meta.env.VITE_STORAGE_PROVIDER || 'local').toLowerCase();
 
-const isEditorMode = () => sessionStorage.getItem(ACCESS_MODE_KEY) === 'editor';
+const hasEditorAccess = async (): Promise<boolean> => {
+  if (supabase) {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) return false;
+    return Boolean(data.session?.user);
+  }
+
+  // 无 Supabase 时，仅允许非访客模式写入（向后兼容本地存储场景）
+  return localStorage.getItem(ACCESS_MODE_KEY) !== GUEST_MODE_VALUE;
+};
 
 const denyWrite = () => {
   alert('当前为访客只读模式，无法创建或修改事件。请使用编辑者账号登录。');
@@ -267,7 +277,7 @@ export const getCompletedEventsCount = async (): Promise<number> => {
 };
 
 export const addEvent = async (event: Event): Promise<boolean> => {
-  if (!isEditorMode()) {
+  if (!(await hasEditorAccess())) {
     denyWrite();
     return false;
   }
@@ -276,7 +286,7 @@ export const addEvent = async (event: Event): Promise<boolean> => {
 };
 
 export const updateEvent = async (id: string, updates: Partial<Event>): Promise<boolean> => {
-  if (!isEditorMode()) {
+  if (!(await hasEditorAccess())) {
     denyWrite();
     return false;
   }
@@ -285,7 +295,7 @@ export const updateEvent = async (id: string, updates: Partial<Event>): Promise<
 };
 
 export const deleteEvent = async (id: string): Promise<boolean> => {
-  if (!isEditorMode()) {
+  if (!(await hasEditorAccess())) {
     denyWrite();
     return false;
   }
@@ -294,7 +304,7 @@ export const deleteEvent = async (id: string): Promise<boolean> => {
 };
 
 export const deleteMultipleEvents = async (ids: string[]): Promise<boolean> => {
-  if (!isEditorMode()) {
+  if (!(await hasEditorAccess())) {
     denyWrite();
     return false;
   }
@@ -303,7 +313,7 @@ export const deleteMultipleEvents = async (ids: string[]): Promise<boolean> => {
 };
 
 export const reorderEvents = async (id: string, direction: 'up' | 'down', priority: number): Promise<boolean> => {
-  if (!isEditorMode()) {
+  if (!(await hasEditorAccess())) {
     denyWrite();
     return false;
   }
@@ -312,7 +322,7 @@ export const reorderEvents = async (id: string, direction: 'up' | 'down', priori
 };
 
 export const deleteAllCompletedEvents = async (): Promise<number> => {
-  if (!isEditorMode()) {
+  if (!(await hasEditorAccess())) {
     denyWrite();
     return 0;
   }

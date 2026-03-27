@@ -11,19 +11,22 @@ export type EventCategory =
   | '机械维修' 
   | '其他';
 
+export interface StepStatusImage {
+  dataUrl: string; // e.g. data:image/jpeg;base64,...
+  name?: string;
+  type?: string;
+  size?: number; // bytes
+  addedAt: string; // ISO date string
+}
+
 export interface EventStep {
   id: string;
   content: string;
   completed: boolean;
   order: number;
   status?: string; // 步骤完成情况的描述
-  statusImage?: {
-    dataUrl: string; // e.g. data:image/jpeg;base64,...
-    name?: string;
-    type?: string;
-    size?: number; // bytes
-    addedAt: string; // ISO date string
-  }; // 步骤状态图片描述（可选）
+  statusImages?: StepStatusImage[]; // 步骤状态图片（最多 3 张）
+  statusImage?: StepStatusImage; // 兼容旧数据（单图）
   scheduledTime?: string; // ISO date string (optional) - 步骤计划时间
   reminderEnabled?: boolean; // 是否启用提醒
   reminderType?: 'sound' | 'vibration' | 'both'; // 提醒类型：铃声、振动或两者

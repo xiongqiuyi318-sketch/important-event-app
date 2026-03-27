@@ -1,21 +1,27 @@
 import { useState, useEffect } from 'react';
-import { Event } from '../types';
+import { Event, StepStatusImage } from '../types';
 import { useAccess } from '../context/AccessContext';
 import { loadEvents, deleteEvent } from '../services/eventStorageService';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import JSZip from 'jszip';
+import { safeFilename, buildStepImageFilename, getImageExtension } from '../utils/fileDownload';
 import './HistoryPage.css';
-
-const safeFilename = (name: string) => name.replace(/[\\/:*?"<>|]/g, '_');
 
 const dataUrlToBlob = async (dataUrl: string): Promise<Blob> => {
   const res = await fetch(dataUrl);
   return await res.blob();
 };
 
+const getStepStatusImages = (step: Event['steps'][number]): StepStatusImage[] => {
+  if (Array.isArray(step.statusImages) && step.statusImages.length > 0) {
+    return step.statusImages.filter((img) => Boolean(img?.dataUrl)).slice(0, 3);
+  }
+  return step.statusImage?.dataUrl ? [step.statusImage] : [];
+};
+
 const hasAnyStatusImage = (event: Event): boolean => {
-  return (event.steps || []).some((s) => !!s.statusImage?.dataUrl);
+  return (event.steps || []).some((s) => getStepStatusImages(s).length > 0);
 };
 
 export default function HistoryPage() {
@@ -62,19 +68,16 @@ export default function HistoryPage() {
     let count = 0;
     for (let i = 0; i < (event.steps || []).length; i++) {
       const step = event.steps[i];
-      const dataUrl = step.statusImage?.dataUrl;
-      if (!dataUrl) continue;
+      const images = getStepStatusImages(step);
+      if (images.length === 0) continue;
 
-      const blob = await dataUrlToBlob(dataUrl);
-      const ext =
-        blob.type === 'image/png' ? 'png' :
-        blob.type === 'image/webp' ? 'webp' :
-        'jpg';
-
-      const base = safeFilename(event.title || '事件');
-      const filename = `${base}-步骤${i + 1}.${ext}`;
-      folder.file(filename, blob);
-      count++;
+      for (let j = 0; j < images.length; j++) {
+        const image = images[j];
+        const blob = await dataUrlToBlob(image.dataUrl);
+        const filename = `${buildStepImageFilename(event.title, i + 1, image.dataUrl, image.type).replace(/\.[^.]+$/, '')}-图${j + 1}.${getImageExtension(image.dataUrl, image.type)}`;
+        folder.file(filename, blob);
+        count++;
+      }
     }
 
     if (count === 0) {
@@ -172,11 +175,10 @@ export default function HistoryPage() {
                 <div className="history-item-steps">
                   <strong>完成步骤：</strong>
                   <ul>
-                    {event.steps.map((step) => (
-                      <li 
-                        key={step.id} 
-                        className={step.completed ? 'completed-step' : ''}
-                      >
+                    {[...event.steps].sort((a, b) => a.order - b.order).map((step, index) => {
+                      const stepImages = getStepStatusImages(step);
+                      return (
+                      <li key={step.id} className={step.completed ? 'completed-step' : ''}>
                         <div className="step-content-wrapper">
                           <span>{step.content}</span>
                           {step.status && (
@@ -185,21 +187,38 @@ export default function HistoryPage() {
                               <span className="step-status-text">{step.status}</span>
                             </div>
                           )}
-                          {step.statusImage?.dataUrl && (
-                            <div className="step-status-image-history">
-                              <span className="step-status-label">图片：</span>
-                              <a href={step.statusImage.dataUrl} target="_blank" rel="noreferrer">
-                                <img
-                                  className="step-status-image-thumb"
-                                  src={step.statusImage.dataUrl}
-                                  alt="状态图片"
-                                />
-                              </a>
+                          {stepImages.length > 0 && (
+                            <div className="step-status-image-history-list">
+                              {stepImages.map((img, imgIndex) => (
+                                <div className="step-status-image-history" key={`${step.id}-img-${imgIndex}`}>
+                                  <span className="step-status-label">图片{imgIndex + 1}：</span>
+                                  <a href={img.dataUrl} target="_blank" rel="noreferrer">
+                                    <img
+                                      className="step-status-image-thumb"
+                                      src={img.dataUrl}
+                                      alt={`状态图片${imgIndex + 1}`}
+                                    />
+                                  </a>
+                                  <a
+                                    className="step-status-image-download"
+                                    href={img.dataUrl}
+                                    download={`${buildStepImageFilename(
+                                      event.title,
+                                      index + 1,
+                                      img.dataUrl,
+                                      img.type
+                                    ).replace(/\.[^.]+$/, '')}-图${imgIndex + 1}.${getImageExtension(img.dataUrl, img.type)}`}
+                                    title="下载该步骤图片"
+                                  >
+                                    下载图片{imgIndex + 1}
+                                  </a>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>
                       </li>
-                    ))}
+                    )})}
                   </ul>
                 </div>
               )}

@@ -460,6 +460,19 @@
   align-items: center;
 }
 
+.step-status-image-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.step-status-images-list {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .step-status-image-thumb {
   width: 32px;
   height: 32px;
@@ -468,10 +481,35 @@
   border: 1px solid #ddd;
 }
 
+.step-status-image-download {
+  font-size: 0.72rem;
+  color: #1976d2;
+  text-decoration: none;
+  border: 1px solid #bbdefb;
+  background: #e3f2fd;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+}
+
+.step-status-image-download:hover {
+  background: #bbdefb;
+}
+
 .status-image-preview-row {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+}
+
+.status-image-preview-list {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.status-image-count-hint {
+  font-size: 0.72rem;
+  color: #666;
 }
 
 .status-image-preview {

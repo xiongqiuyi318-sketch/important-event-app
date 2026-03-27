@@ -244,6 +244,12 @@
   margin-left: 0.5rem;
 }
 
+.step-status-image-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .step-status-image-history .step-status-label {
   color: #666;
   font-weight: 500;
@@ -256,6 +262,20 @@
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid #ddd;
+}
+
+.step-status-image-download {
+  font-size: 0.8rem;
+  color: #1565c0;
+  text-decoration: none;
+  border: 1px solid #bbdefb;
+  background: #e3f2fd;
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+}
+
+.step-status-image-download:hover {
+  background: #bbdefb;
 }
 
 

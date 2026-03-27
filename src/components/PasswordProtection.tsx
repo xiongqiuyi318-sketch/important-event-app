@@ -56,7 +56,7 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
       <div className="password-container">
         <div className="password-box">
           <h2>重要事件备忘录</h2>
-          <p className="password-hint">访客可只读浏览，编辑者登录后可创建和修改事件</p>
+          <p className="password-hint">访客可只读浏览，编辑者登录后可创建和修改事件（同设备会长期保持登录，直到手动退出）</p>
           <form onSubmit={handleSubmit}>
             <input
               type="email"

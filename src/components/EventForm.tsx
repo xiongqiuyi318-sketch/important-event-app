@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Event, EventCategory, EventPriority } from '../types';
 import { addEvent, updateEvent, loadEvents } from '../services/eventStorageService';
 import { generateStepsForCategory, updateStepsFromDescription } from '../utils/stepGenerator';
+import { useAccess } from '../context/AccessContext';
 import './EventForm.css';
 
 interface EventFormProps {
@@ -23,6 +24,9 @@ const categories: EventCategory[] = [
 ];
 
 export default function EventForm({ event, onSave, onCancel, canEdit = false }: EventFormProps) {
+  const { canEdit: canEditFromAccess } = useAccess();
+  const effectiveCanEdit = canEdit || canEditFromAccess;
+
   // 表单数据状态 - 改成强制选择（无默认值）
   const [title, setTitle] = useState(event?.title || '');
   const [description, setDescription] = useState(event?.description || '');
@@ -177,7 +181,7 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canEdit) {
+    if (!effectiveCanEdit) {
       alert('访客模式不可创建或编辑事件');
       return;
     }
@@ -518,7 +522,7 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
             <button type="button" className="btn-cancel" onClick={onCancel}>
               取消
             </button>
-            <button type="submit" className="btn-submit" disabled={!canEdit}>
+            <button type="submit" className="btn-submit" disabled={!effectiveCanEdit}>
               {event ? '更新' : '创建'}
             </button>
           </div>

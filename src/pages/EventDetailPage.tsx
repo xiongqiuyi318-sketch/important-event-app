@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Event } from '../types';
+import { Event, StepStatusImage } from '../types';
 import { useAccess } from '../context/AccessContext';
 import { loadEvents, updateEvent, deleteEvent } from '../services/eventStorageService';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import EventForm from '../components/EventForm';
+import { buildStepImageFilename, getImageExtension } from '../utils/fileDownload';
 import './EventDetailPage.css';
 
 type CompressOptions = {
@@ -92,8 +93,14 @@ export default function EventDetailPage() {
   const [editingStepContent, setEditingStepContent] = useState('');
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [editingStatus, setEditingStatus] = useState('');
-  const [editingStatusImage, setEditingStatusImage] = useState('');
-  const [editingStatusImageMeta, setEditingStatusImageMeta] = useState<{ name?: string; type?: string; size?: number } | null>(null);
+  const [editingStatusImages, setEditingStatusImages] = useState<StepStatusImage[]>([]);
+  const getStepStatusImages = (step: Event['steps'][number]): StepStatusImage[] => {
+    if (Array.isArray(step.statusImages) && step.statusImages.length > 0) {
+      return step.statusImages.filter((img) => Boolean(img?.dataUrl)).slice(0, 3);
+    }
+    return step.statusImage?.dataUrl ? [step.statusImage] : [];
+  };
+
   const [editingTimeId, setEditingTimeId] = useState<string | null>(null);
   const [editingTime, setEditingTime] = useState('');
   const [editingReminderEnabled, setEditingReminderEnabled] = useState(false);
@@ -119,6 +126,7 @@ export default function EventDetailPage() {
   const completedSteps = event.steps.filter(s => s.completed).length;
   const totalSteps = event.steps.length;
   const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+  const sortedSteps = [...event.steps].sort((a, b) => a.order - b.order);
 
   const priorityLabels: Record<number, string> = {
     1: '紧急',
@@ -199,20 +207,15 @@ export default function EventDetailPage() {
       step.id === stepId ? {
         ...step,
         status: statusTrimmed || undefined,
-        statusImage: editingStatusImage ? {
-          dataUrl: editingStatusImage,
-          name: editingStatusImageMeta?.name,
-          type: editingStatusImageMeta?.type,
-          size: editingStatusImageMeta?.size,
-          addedAt: new Date().toISOString()
-        } : undefined
+        statusImages: editingStatusImages.length > 0 ? editingStatusImages.slice(0, 3) : undefined,
+        // 保留单图字段用于兼容老展示逻辑
+        statusImage: editingStatusImages.length > 0 ? editingStatusImages[0] : undefined
       } : step
     );
     await updateEvent(event.id, { steps: updatedSteps });
     setEditingStatusId(null);
     setEditingStatus('');
-    setEditingStatusImage('');
-    setEditingStatusImageMeta(null);
+    setEditingStatusImages([]);
     await loadEventData();
   };
 
@@ -346,10 +349,9 @@ export default function EventDetailPage() {
           <div className="no-steps">暂无步骤，点击上方按钮添加</div>
         ) : (
           <ul className="steps-list-compact">
-            {event.steps
-              .sort((a, b) => a.order - b.order)
-              .map((step, index) => {
+            {sortedSteps.map((step, index) => {
                 const isStepOverdue = step.scheduledTime && new Date(step.scheduledTime) < new Date() && !step.completed;
+                const stepImages = getStepStatusImages(step);
                 return (
                   <li key={step.id} className={`step-item-compact ${step.completed ? 'completed' : ''} ${isStepOverdue ? 'overdue' : ''}`}>
                     <span className="step-num">{index + 1}</span>
@@ -399,7 +401,7 @@ export default function EventDetailPage() {
 
                     <div className="step-actions-compact">
                       <button onClick={() => void handleMoveStep(step.id, 'up')} disabled={!canEdit || index === 0}>↑</button>
-                      <button onClick={() => void handleMoveStep(step.id, 'down')} disabled={!canEdit || index === event.steps.length - 1}>↓</button>
+                      <button onClick={() => void handleMoveStep(step.id, 'down')} disabled={!canEdit || index === sortedSteps.length - 1}>↓</button>
                       <button onClick={() => { setEditingStepId(step.id); setEditingStepContent(step.content); }} disabled={!canEdit}>✏️</button>
                       <button onClick={() => void handleDeleteStep(step.id)} disabled={!canEdit}>×</button>
                     </div>
@@ -414,19 +416,33 @@ export default function EventDetailPage() {
                       {step.status && (
                         <span className="step-status-badge">📝 {step.status}</span>
                       )}
-                      {step.statusImage?.dataUrl && (
-                        <a
-                          className="step-status-image-link"
-                          href={step.statusImage.dataUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <img
-                            className="step-status-image-thumb"
-                            src={step.statusImage.dataUrl}
-                            alt="状态图片"
-                          />
-                        </a>
+                      {stepImages.length > 0 && (
+                        <div className="step-status-images-list">
+                          {stepImages.map((img, imgIndex) => (
+                            <div key={`${step.id}-img-${imgIndex}`} className="step-status-image-actions">
+                              <a
+                                className="step-status-image-link"
+                                href={img.dataUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                <img
+                                  className="step-status-image-thumb"
+                                  src={img.dataUrl}
+                                  alt={`状态图片${imgIndex + 1}`}
+                                />
+                              </a>
+                              <a
+                                className="step-status-image-download"
+                                href={img.dataUrl}
+                                download={`${buildStepImageFilename(event.title, index + 1, img.dataUrl, img.type).replace(/\.[^.]+$/, '')}-图${imgIndex + 1}.${getImageExtension(img.dataUrl, img.type)}`}
+                                title="下载该步骤图片"
+                              >
+                                下载图片{imgIndex + 1}
+                              </a>
+                            </div>
+                          ))}
+                        </div>
                       )}
                       
                       {editingTimeId === step.id ? (
@@ -472,9 +488,15 @@ export default function EventDetailPage() {
                           <input
                             type="file"
                             accept="image/*"
+                            disabled={editingStatusImages.length >= 3}
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
+                              if (editingStatusImages.length >= 3) {
+                                alert('每个步骤最多保存 3 张图片。');
+                                e.target.value = '';
+                                return;
+                              }
 
                               try {
                                 const MAX_BYTES = 800 * 1024;
@@ -491,39 +513,52 @@ export default function EventDetailPage() {
                                   return;
                                 }
 
-                                setEditingStatusImage(dataUrl);
-                                setEditingStatusImageMeta({ name: file.name, type: outBlob.type, size: outBlob.size });
+                                const nextImage: StepStatusImage = {
+                                  dataUrl,
+                                  name: file.name,
+                                  type: outBlob.type,
+                                  size: outBlob.size,
+                                  addedAt: new Date().toISOString()
+                                };
+                                setEditingStatusImages((prev) => {
+                                  if (prev.length >= 3) return prev;
+                                  return [...prev, nextImage];
+                                });
                               } catch {
                                 alert('图片处理失败，请换一张图片重试。');
                                 e.target.value = '';
                               }
+                              e.target.value = '';
                             }}
                           />
 
-                          {editingStatusImage && (
-                            <div className="status-image-preview-row">
-                              <img
-                                className="status-image-preview"
-                                src={editingStatusImage}
-                                alt="预览"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingStatusImage('');
-                                  setEditingStatusImageMeta(null);
-                                }}
-                              >
-                                移除图片
-                              </button>
+                          {editingStatusImages.length > 0 && (
+                            <div className="status-image-preview-list">
+                              {editingStatusImages.map((img, imgIndex) => (
+                                <div key={`preview-${imgIndex}`} className="status-image-preview-row">
+                                  <img
+                                    className="status-image-preview"
+                                    src={img.dataUrl}
+                                    alt={`预览${imgIndex + 1}`}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingStatusImages((prev) => prev.filter((_, i) => i !== imgIndex));
+                                    }}
+                                  >
+                                    移除图片{imgIndex + 1}
+                                  </button>
+                                </div>
+                              ))}
                             </div>
                           )}
+                          <span className="status-image-count-hint">已选 {editingStatusImages.length}/3 张</span>
                           <button onClick={() => void handleUpdateStepStatus(step.id)} disabled={!canEdit}>保存</button>
                           <button onClick={() => {
                             setEditingStatusId(null);
                             setEditingStatus('');
-                            setEditingStatusImage('');
-                            setEditingStatusImageMeta(null);
+                            setEditingStatusImages([]);
                           }}>取消</button>
                         </div>
                       ) : (
@@ -532,12 +567,7 @@ export default function EventDetailPage() {
                           onClick={() => {
                             setEditingStatusId(step.id);
                             setEditingStatus(step.status || '');
-                            setEditingStatusImage(step.statusImage?.dataUrl || '');
-                            setEditingStatusImageMeta(
-                              step.statusImage
-                                ? { name: step.statusImage.name, type: step.statusImage.type, size: step.statusImage.size }
-                                : null
-                            );
+                            setEditingStatusImages(getStepStatusImages(step));
                           }}
                           disabled={!canEdit}
                         >
