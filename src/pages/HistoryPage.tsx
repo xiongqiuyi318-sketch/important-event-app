@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Event, StepStatusImage } from '../types';
+import { Event, StepAttachment, StepStatusImage } from '../types';
 import { useAccess } from '../context/AccessContext';
 import { loadEvents, deleteEvent } from '../services/eventStorageService';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import JSZip from 'jszip';
-import { safeFilename, buildStepImageFilename, getImageExtension } from '../utils/fileDownload';
+import {
+  safeFilename,
+  buildStepDocumentDownloadName,
+  buildStepImageFilename,
+  getImageExtension,
+} from '../utils/fileDownload';
 import './HistoryPage.css';
 
 const dataUrlToBlob = async (dataUrl: string): Promise<Blob> => {
@@ -20,8 +25,22 @@ const getStepStatusImages = (step: Event['steps'][number]): StepStatusImage[] =>
   return step.statusImage?.dataUrl ? [step.statusImage] : [];
 };
 
-const hasAnyStatusImage = (event: Event): boolean => {
-  return (event.steps || []).some((s) => getStepStatusImages(s).length > 0);
+const getStepAttachments = (
+  step: Event['steps'][number],
+  key: 'excelDocuments' | 'pdfDocuments'
+): StepAttachment[] => {
+  const arr = step[key];
+  if (!Array.isArray(arr)) return [];
+  return arr.filter((d) => Boolean(d?.dataUrl)).slice(0, 3);
+};
+
+const hasAnyStepAttachment = (event: Event): boolean => {
+  return (event.steps || []).some(
+    (s) =>
+      getStepStatusImages(s).length > 0 ||
+      getStepAttachments(s, 'excelDocuments').length > 0 ||
+      getStepAttachments(s, 'pdfDocuments').length > 0
+  );
 };
 
 export default function HistoryPage() {
@@ -66,11 +85,10 @@ export default function HistoryPage() {
     if (!folder) throw new Error('zip folder failed');
 
     let count = 0;
-    for (let i = 0; i < (event.steps || []).length; i++) {
-      const step = event.steps[i];
+    const sortedSteps = [...(event.steps || [])].sort((a, b) => a.order - b.order);
+    for (let i = 0; i < sortedSteps.length; i++) {
+      const step = sortedSteps[i];
       const images = getStepStatusImages(step);
-      if (images.length === 0) continue;
-
       for (let j = 0; j < images.length; j++) {
         const image = images[j];
         const blob = await dataUrlToBlob(image.dataUrl);
@@ -78,10 +96,26 @@ export default function HistoryPage() {
         folder.file(filename, blob);
         count++;
       }
+      const excels = getStepAttachments(step, 'excelDocuments');
+      for (let j = 0; j < excels.length; j++) {
+        const doc = excels[j];
+        const blob = await dataUrlToBlob(doc.dataUrl);
+        const filename = buildStepDocumentDownloadName(event.title, i + 1, j + 1, 'excel', doc);
+        folder.file(filename, blob);
+        count++;
+      }
+      const pdfs = getStepAttachments(step, 'pdfDocuments');
+      for (let j = 0; j < pdfs.length; j++) {
+        const doc = pdfs[j];
+        const blob = await dataUrlToBlob(doc.dataUrl);
+        const filename = buildStepDocumentDownloadName(event.title, i + 1, j + 1, 'pdf', doc);
+        folder.file(filename, blob);
+        count++;
+      }
     }
 
     if (count === 0) {
-      alert('没有可下载的状态图片。');
+      alert('没有可下载的步骤附件（图片 / Excel / PDF）。');
       return;
     }
 
@@ -95,7 +129,7 @@ export default function HistoryPage() {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-    alert('图片已下载到“确认文件夹”');
+    alert('附件已下载到“确认”文件夹');
   };
 
   const getPriorityLabel = (priority: number) => {
@@ -130,13 +164,13 @@ export default function HistoryPage() {
                   <span className="category-badge">{event.category}</span>
                 </div>
                 <div className="history-item-actions">
-                  {hasAnyStatusImage(event) && (
+                  {hasAnyStepAttachment(event) && (
                     <button
                       className="btn-download-confirm"
                       onClick={() => downloadConfirmZipForEvent(event)}
-                      title="下载该事件所有步骤的状态图片（打包为确认.zip）"
+                      title="下载该事件所有步骤的图片、Excel、PDF（打包为确认.zip）"
                     >
-                      一键下载确认图片
+                      一键下载确认附件
                     </button>
                   )}
                   <button 
@@ -177,48 +211,93 @@ export default function HistoryPage() {
                   <ul>
                     {[...event.steps].sort((a, b) => a.order - b.order).map((step, index) => {
                       const stepImages = getStepStatusImages(step);
+                      const excelDocs = getStepAttachments(step, 'excelDocuments');
+                      const pdfDocs = getStepAttachments(step, 'pdfDocuments');
                       return (
-                      <li key={step.id} className={step.completed ? 'completed-step' : ''}>
-                        <div className="step-content-wrapper">
-                          <span>{step.content}</span>
-                          {step.status && (
-                            <div className="step-status-history">
-                              <span className="step-status-label">状态：</span>
-                              <span className="step-status-text">{step.status}</span>
-                            </div>
-                          )}
-                          {stepImages.length > 0 && (
-                            <div className="step-status-image-history-list">
-                              {stepImages.map((img, imgIndex) => (
-                                <div className="step-status-image-history" key={`${step.id}-img-${imgIndex}`}>
-                                  <span className="step-status-label">图片{imgIndex + 1}：</span>
-                                  <a href={img.dataUrl} target="_blank" rel="noreferrer">
-                                    <img
-                                      className="step-status-image-thumb"
-                                      src={img.dataUrl}
-                                      alt={`状态图片${imgIndex + 1}`}
-                                    />
-                                  </a>
+                        <li key={step.id} className={step.completed ? 'completed-step' : ''}>
+                          <div className="step-content-wrapper">
+                            <span>{step.content}</span>
+                            {step.status && (
+                              <div className="step-status-history">
+                                <span className="step-status-label">状态：</span>
+                                <span className="step-status-text">{step.status}</span>
+                              </div>
+                            )}
+                            {stepImages.length > 0 && (
+                              <div className="step-status-image-history-list">
+                                {stepImages.map((img, imgIndex) => (
+                                  <div className="step-status-image-history" key={`${step.id}-img-${imgIndex}`}>
+                                    <span className="step-status-label">图片{imgIndex + 1}：</span>
+                                    <a href={img.dataUrl} target="_blank" rel="noreferrer">
+                                      <img
+                                        className="step-status-image-thumb"
+                                        src={img.dataUrl}
+                                        alt={`状态图片${imgIndex + 1}`}
+                                      />
+                                    </a>
+                                    <a
+                                      className="step-status-image-download"
+                                      href={img.dataUrl}
+                                      download={`${buildStepImageFilename(
+                                        event.title,
+                                        index + 1,
+                                        img.dataUrl,
+                                        img.type
+                                      ).replace(/\.[^.]+$/, '')}-图${imgIndex + 1}.${getImageExtension(img.dataUrl, img.type)}`}
+                                      title="下载该步骤图片"
+                                    >
+                                      下载图片{imgIndex + 1}
+                                    </a>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {excelDocs.length > 0 && (
+                              <div className="step-doc-history-block">
+                                <span className="step-status-label">Excel：</span>
+                                {excelDocs.map((doc, di) => (
                                   <a
+                                    key={`${step.id}-xls-${di}`}
                                     className="step-status-image-download"
-                                    href={img.dataUrl}
-                                    download={`${buildStepImageFilename(
+                                    href={doc.dataUrl}
+                                    download={buildStepDocumentDownloadName(
                                       event.title,
                                       index + 1,
-                                      img.dataUrl,
-                                      img.type
-                                    ).replace(/\.[^.]+$/, '')}-图${imgIndex + 1}.${getImageExtension(img.dataUrl, img.type)}`}
-                                    title="下载该步骤图片"
+                                      di + 1,
+                                      'excel',
+                                      doc
+                                    )}
                                   >
-                                    下载图片{imgIndex + 1}
+                                    {doc.name || `下载${di + 1}`}
                                   </a>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </li>
-                    )})}
+                                ))}
+                              </div>
+                            )}
+                            {pdfDocs.length > 0 && (
+                              <div className="step-doc-history-block">
+                                <span className="step-status-label">PDF：</span>
+                                {pdfDocs.map((doc, di) => (
+                                  <a
+                                    key={`${step.id}-pdf-${di}`}
+                                    className="step-status-image-download"
+                                    href={doc.dataUrl}
+                                    download={buildStepDocumentDownloadName(
+                                      event.title,
+                                      index + 1,
+                                      di + 1,
+                                      'pdf',
+                                      doc
+                                    )}
+                                  >
+                                    {doc.name || `下载${di + 1}`}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}

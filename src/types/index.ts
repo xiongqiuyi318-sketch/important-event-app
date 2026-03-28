@@ -19,6 +19,15 @@ export interface StepStatusImage {
   addedAt: string; // ISO date string
 }
 
+/** 步骤附件（Excel / PDF 等），以 data URL 形式存储 */
+export interface StepAttachment {
+  dataUrl: string;
+  name?: string;
+  type?: string;
+  size?: number;
+  addedAt: string;
+}
+
 export interface EventStep {
   id: string;
   content: string;
@@ -27,6 +36,8 @@ export interface EventStep {
   status?: string; // 步骤完成情况的描述
   statusImages?: StepStatusImage[]; // 步骤状态图片（最多 3 张）
   statusImage?: StepStatusImage; // 兼容旧数据（单图）
+  excelDocuments?: StepAttachment[]; // Excel（最多 3 个）
+  pdfDocuments?: StepAttachment[]; // PDF（最多 3 个）
   scheduledTime?: string; // ISO date string (optional) - 步骤计划时间
   reminderEnabled?: boolean; // 是否启用提醒
   reminderType?: 'sound' | 'vibration' | 'both'; // 提醒类型：铃声、振动或两者

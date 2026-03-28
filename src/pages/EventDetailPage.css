@@ -512,6 +512,73 @@
   color: #666;
 }
 
+.step-attachments-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.step-attach-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.step-doc-download {
+  font-size: 0.72rem;
+  color: #1565c0;
+  text-decoration: none;
+  border: 1px solid #bbdefb;
+  background: #e3f2fd;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step-doc-download:hover {
+  background: #bbdefb;
+}
+
+.step-doc-upload-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  color: #555;
+  width: 100%;
+}
+
+.step-doc-upload-label input[type="file"] {
+  font-size: 0.7rem;
+}
+
+.step-doc-preview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+}
+
+.step-doc-preview-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.step-doc-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .status-image-preview {
   width: 44px;
   height: 44px;

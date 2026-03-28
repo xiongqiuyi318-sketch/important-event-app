@@ -1,7 +1,7 @@
 import { Event, EventsState } from '../types';
 
 const STORAGE_KEY = 'important-events-memo';
-const DATA_VERSION = 3; // 数据版本号，当数据结构变化时递增
+const DATA_VERSION = 4; // 数据版本号，当数据结构变化时递增
 
 // 检查事件是否过期
 const checkEventExpired = (event: Event): boolean => {
@@ -50,6 +50,24 @@ const migrateData = (data: any, version: number): EventsState => {
             };
           })
         : []
+    }));
+  }
+
+  // v3 -> v4：步骤支持 excelDocuments / pdfDocuments（各最多 3 个）
+  if (version < 4) {
+    safe.events = safe.events.map((event: any) => ({
+      ...event,
+      steps: Array.isArray(event?.steps)
+        ? event.steps.map((step: any) => ({
+            ...step,
+            excelDocuments: Array.isArray(step?.excelDocuments)
+              ? step.excelDocuments.filter((d: any) => Boolean(d?.dataUrl)).slice(0, 3)
+              : undefined,
+            pdfDocuments: Array.isArray(step?.pdfDocuments)
+              ? step.pdfDocuments.filter((d: any) => Boolean(d?.dataUrl)).slice(0, 3)
+              : undefined,
+          }))
+        : [],
     }));
   }
 

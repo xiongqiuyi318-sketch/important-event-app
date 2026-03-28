@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Event, StepStatusImage } from '../types';
+import { Event, StepAttachment, StepStatusImage } from '../types';
 import { useAccess } from '../context/AccessContext';
 import { loadEvents, updateEvent, deleteEvent } from '../services/eventStorageService';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import EventForm from '../components/EventForm';
-import { buildStepImageFilename, getImageExtension } from '../utils/fileDownload';
+import { buildStepDocumentDownloadName, buildStepImageFilename, getImageExtension } from '../utils/fileDownload';
 import './EventDetailPage.css';
 
 type CompressOptions = {
@@ -81,6 +81,35 @@ async function compressImageToDataUrl(
   return { dataUrl: await blobToDataUrl(lastBlob), outBlob: lastBlob };
 }
 
+const MAX_STEP_DOC_BYTES = 3 * 1024 * 1024;
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result || ''));
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function isExcelFile(file: File): boolean {
+  const n = file.name.toLowerCase();
+  if (n.endsWith('.xlsx') || n.endsWith('.xls') || n.endsWith('.xlsm')) return true;
+  const t = file.type;
+  if (!t) return false;
+  return (
+    t === 'application/vnd.ms-excel' ||
+    t === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    t.includes('spreadsheetml') ||
+    t.includes('ms-excel')
+  );
+}
+
+function isPdfFile(file: File): boolean {
+  const n = file.name.toLowerCase();
+  return n.endsWith('.pdf') || file.type === 'application/pdf';
+}
+
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -94,11 +123,22 @@ export default function EventDetailPage() {
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [editingStatus, setEditingStatus] = useState('');
   const [editingStatusImages, setEditingStatusImages] = useState<StepStatusImage[]>([]);
+  const [editingExcelDocs, setEditingExcelDocs] = useState<StepAttachment[]>([]);
+  const [editingPdfDocs, setEditingPdfDocs] = useState<StepAttachment[]>([]);
   const getStepStatusImages = (step: Event['steps'][number]): StepStatusImage[] => {
     if (Array.isArray(step.statusImages) && step.statusImages.length > 0) {
       return step.statusImages.filter((img) => Boolean(img?.dataUrl)).slice(0, 3);
     }
     return step.statusImage?.dataUrl ? [step.statusImage] : [];
+  };
+
+  const getStepAttachments = (
+    step: Event['steps'][number],
+    key: 'excelDocuments' | 'pdfDocuments'
+  ): StepAttachment[] => {
+    const arr = step[key];
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((d) => Boolean(d?.dataUrl)).slice(0, 3);
   };
 
   const [editingTimeId, setEditingTimeId] = useState<string | null>(null);
@@ -209,13 +249,17 @@ export default function EventDetailPage() {
         status: statusTrimmed || undefined,
         statusImages: editingStatusImages.length > 0 ? editingStatusImages.slice(0, 3) : undefined,
         // 保留单图字段用于兼容老展示逻辑
-        statusImage: editingStatusImages.length > 0 ? editingStatusImages[0] : undefined
+        statusImage: editingStatusImages.length > 0 ? editingStatusImages[0] : undefined,
+        excelDocuments: editingExcelDocs.length > 0 ? editingExcelDocs.slice(0, 3) : undefined,
+        pdfDocuments: editingPdfDocs.length > 0 ? editingPdfDocs.slice(0, 3) : undefined,
       } : step
     );
     await updateEvent(event.id, { steps: updatedSteps });
     setEditingStatusId(null);
     setEditingStatus('');
     setEditingStatusImages([]);
+    setEditingExcelDocs([]);
+    setEditingPdfDocs([]);
     await loadEventData();
   };
 
@@ -352,6 +396,8 @@ export default function EventDetailPage() {
             {sortedSteps.map((step, index) => {
                 const isStepOverdue = step.scheduledTime && new Date(step.scheduledTime) < new Date() && !step.completed;
                 const stepImages = getStepStatusImages(step);
+                const excelDocs = getStepAttachments(step, 'excelDocuments');
+                const pdfDocs = getStepAttachments(step, 'pdfDocuments');
                 return (
                   <li key={step.id} className={`step-item-compact ${step.completed ? 'completed' : ''} ${isStepOverdue ? 'overdue' : ''}`}>
                     <span className="step-num">{index + 1}</span>
@@ -441,6 +487,38 @@ export default function EventDetailPage() {
                                 下载图片{imgIndex + 1}
                               </a>
                             </div>
+                          ))}
+                        </div>
+                      )}
+                      {excelDocs.length > 0 && (
+                        <div className="step-attachments-row">
+                          <span className="step-attach-label">Excel</span>
+                          {excelDocs.map((doc, di) => (
+                            <a
+                              key={`${step.id}-xls-${di}`}
+                              className="step-doc-download"
+                              href={doc.dataUrl}
+                              download={buildStepDocumentDownloadName(event.title, index + 1, di + 1, 'excel', doc)}
+                              title="下载 Excel"
+                            >
+                              📗 {doc.name || `Excel${di + 1}`}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {pdfDocs.length > 0 && (
+                        <div className="step-attachments-row">
+                          <span className="step-attach-label">PDF</span>
+                          {pdfDocs.map((doc, di) => (
+                            <a
+                              key={`${step.id}-pdf-${di}`}
+                              className="step-doc-download"
+                              href={doc.dataUrl}
+                              download={buildStepDocumentDownloadName(event.title, index + 1, di + 1, 'pdf', doc)}
+                              title="下载 PDF"
+                            >
+                              📕 {doc.name || `PDF${di + 1}`}
+                            </a>
                           ))}
                         </div>
                       )}
@@ -554,11 +632,138 @@ export default function EventDetailPage() {
                             </div>
                           )}
                           <span className="status-image-count-hint">已选 {editingStatusImages.length}/3 张</span>
+
+                          <label className="step-doc-upload-label">
+                            Excel（最多 3 个，单个≤3MB）
+                            <input
+                              type="file"
+                              accept=".xlsx,.xls,.xlsm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                              disabled={editingExcelDocs.length >= 3}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                if (editingExcelDocs.length >= 3) {
+                                  alert('每个步骤最多保存 3 个 Excel 文件。');
+                                  e.target.value = '';
+                                  return;
+                                }
+                                if (!isExcelFile(file)) {
+                                  alert('请选择 Excel 文件（.xls / .xlsx）。');
+                                  e.target.value = '';
+                                  return;
+                                }
+                                if (file.size > MAX_STEP_DOC_BYTES) {
+                                  alert('单个文件不能超过 3MB，请先压缩或拆分后再选。');
+                                  e.target.value = '';
+                                  return;
+                                }
+                                try {
+                                  const dataUrl = await fileToDataUrl(file);
+                                  const next: StepAttachment = {
+                                    dataUrl,
+                                    name: file.name,
+                                    type: file.type,
+                                    size: file.size,
+                                    addedAt: new Date().toISOString(),
+                                  };
+                                  setEditingExcelDocs((prev) =>
+                                    prev.length >= 3 ? prev : [...prev, next]
+                                  );
+                                } catch {
+                                  alert('读取文件失败，请重试。');
+                                }
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                          {editingExcelDocs.length > 0 && (
+                            <ul className="step-doc-preview-list">
+                              {editingExcelDocs.map((doc, di) => (
+                                <li key={`xls-${di}`}>
+                                  <span className="step-doc-name">{doc.name || `Excel${di + 1}`}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingExcelDocs((prev) => prev.filter((_, i) => i !== di))
+                                    }
+                                  >
+                                    移除
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <span className="status-image-count-hint">Excel {editingExcelDocs.length}/3</span>
+
+                          <label className="step-doc-upload-label">
+                            PDF（最多 3 个，单个≤3MB）
+                            <input
+                              type="file"
+                              accept=".pdf,application/pdf"
+                              disabled={editingPdfDocs.length >= 3}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                if (editingPdfDocs.length >= 3) {
+                                  alert('每个步骤最多保存 3 个 PDF 文件。');
+                                  e.target.value = '';
+                                  return;
+                                }
+                                if (!isPdfFile(file)) {
+                                  alert('请选择 PDF 文件。');
+                                  e.target.value = '';
+                                  return;
+                                }
+                                if (file.size > MAX_STEP_DOC_BYTES) {
+                                  alert('单个文件不能超过 3MB，请先压缩后再选。');
+                                  e.target.value = '';
+                                  return;
+                                }
+                                try {
+                                  const dataUrl = await fileToDataUrl(file);
+                                  const next: StepAttachment = {
+                                    dataUrl,
+                                    name: file.name,
+                                    type: file.type,
+                                    size: file.size,
+                                    addedAt: new Date().toISOString(),
+                                  };
+                                  setEditingPdfDocs((prev) =>
+                                    prev.length >= 3 ? prev : [...prev, next]
+                                  );
+                                } catch {
+                                  alert('读取文件失败，请重试。');
+                                }
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                          {editingPdfDocs.length > 0 && (
+                            <ul className="step-doc-preview-list">
+                              {editingPdfDocs.map((doc, di) => (
+                                <li key={`pdf-${di}`}>
+                                  <span className="step-doc-name">{doc.name || `PDF${di + 1}`}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditingPdfDocs((prev) => prev.filter((_, i) => i !== di))
+                                    }
+                                  >
+                                    移除
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <span className="status-image-count-hint">PDF {editingPdfDocs.length}/3</span>
+
                           <button onClick={() => void handleUpdateStepStatus(step.id)} disabled={!canEdit}>保存</button>
                           <button onClick={() => {
                             setEditingStatusId(null);
                             setEditingStatus('');
                             setEditingStatusImages([]);
+                            setEditingExcelDocs([]);
+                            setEditingPdfDocs([]);
                           }}>取消</button>
                         </div>
                       ) : (
@@ -568,6 +773,8 @@ export default function EventDetailPage() {
                             setEditingStatusId(step.id);
                             setEditingStatus(step.status || '');
                             setEditingStatusImages(getStepStatusImages(step));
+                            setEditingExcelDocs(getStepAttachments(step, 'excelDocuments'));
+                            setEditingPdfDocs(getStepAttachments(step, 'pdfDocuments'));
                           }}
                           disabled={!canEdit}
                         >

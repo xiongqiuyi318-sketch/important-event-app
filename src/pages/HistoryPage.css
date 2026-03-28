@@ -256,6 +256,15 @@
   flex-shrink: 0;
 }
 
+.step-doc-history-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+}
+
 .step-status-image-thumb {
   width: 36px;
   height: 36px;
