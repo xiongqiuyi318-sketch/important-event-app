@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import EventForm from '../components/EventForm';
 import { buildStepDocumentDownloadName, buildStepImageFilename, getImageExtension } from '../utils/fileDownload';
+import { downloadDataUrlAsFile, openDataUrlInNewWindow } from '../utils/dataUrlActions';
 import './EventDetailPage.css';
 
 type CompressOptions = {
@@ -303,6 +304,27 @@ export default function EventDetailPage() {
     navigate('/');
   };
 
+  const handleOpenDataUrl = async (dataUrl: string) => {
+    try {
+      await openDataUrlInNewWindow(dataUrl);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'POPUP_BLOCKED') {
+        alert('无法打开新窗口，请允许浏览器弹窗，或先点「下载」保存后查看。');
+      } else {
+        alert('无法在新窗口打开，请使用「下载」保存后用本地应用查看（微信内可点右上角用系统浏览器打开本页再试）。');
+      }
+    }
+  };
+
+  const handleDownloadDataUrl = async (dataUrl: string, filename: string) => {
+    try {
+      await downloadDataUrlAsFile(dataUrl, filename);
+    } catch {
+      alert('下载失败，请稍后再试；若在微信内，可尝试用系统浏览器打开本页后下载。');
+    }
+  };
+
   if (showEditForm) {
     return (
       <div className="event-detail-page">
@@ -466,26 +488,31 @@ export default function EventDetailPage() {
                         <div className="step-status-images-list">
                           {stepImages.map((img, imgIndex) => (
                             <div key={`${step.id}-img-${imgIndex}`} className="step-status-image-actions">
-                              <a
+                              <button
+                                type="button"
                                 className="step-status-image-link"
-                                href={img.dataUrl}
-                                target="_blank"
-                                rel="noreferrer"
+                                title="查看大图"
+                                onClick={() => void handleOpenDataUrl(img.dataUrl)}
                               >
                                 <img
                                   className="step-status-image-thumb"
                                   src={img.dataUrl}
                                   alt={`状态图片${imgIndex + 1}`}
                                 />
-                              </a>
-                              <a
+                              </button>
+                              <button
+                                type="button"
                                 className="step-status-image-download"
-                                href={img.dataUrl}
-                                download={`${buildStepImageFilename(event.title, index + 1, img.dataUrl, img.type).replace(/\.[^.]+$/, '')}-图${imgIndex + 1}.${getImageExtension(img.dataUrl, img.type)}`}
                                 title="下载该步骤图片"
+                                onClick={() =>
+                                  void handleDownloadDataUrl(
+                                    img.dataUrl,
+                                    `${buildStepImageFilename(event.title, index + 1, img.dataUrl, img.type).replace(/\.[^.]+$/, '')}-图${imgIndex + 1}.${getImageExtension(img.dataUrl, img.type)}`
+                                  )
+                                }
                               >
                                 下载图片{imgIndex + 1}
-                              </a>
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -494,15 +521,24 @@ export default function EventDetailPage() {
                         <div className="step-attachments-row">
                           <span className="step-attach-label">Excel</span>
                           {excelDocs.map((doc, di) => (
-                            <a
-                              key={`${step.id}-xls-${di}`}
-                              className="step-doc-download"
-                              href={doc.dataUrl}
-                              download={buildStepDocumentDownloadName(event.title, index + 1, di + 1, 'excel', doc)}
-                              title="下载 Excel"
-                            >
-                              📗 {doc.name || `Excel${di + 1}`}
-                            </a>
+                            <span key={`${step.id}-xls-${di}`} className="step-doc-actions">
+                              <span className="step-doc-name-inline" title={doc.name}>
+                                📗 {doc.name || `Excel${di + 1}`}
+                              </span>
+                              <button
+                                type="button"
+                                className="step-doc-download"
+                                title="下载 Excel"
+                                onClick={() =>
+                                  void handleDownloadDataUrl(
+                                    doc.dataUrl,
+                                    buildStepDocumentDownloadName(event.title, index + 1, di + 1, 'excel', doc)
+                                  )
+                                }
+                              >
+                                下载
+                              </button>
+                            </span>
                           ))}
                         </div>
                       )}
@@ -510,15 +546,24 @@ export default function EventDetailPage() {
                         <div className="step-attachments-row">
                           <span className="step-attach-label">PDF</span>
                           {pdfDocs.map((doc, di) => (
-                            <a
-                              key={`${step.id}-pdf-${di}`}
-                              className="step-doc-download"
-                              href={doc.dataUrl}
-                              download={buildStepDocumentDownloadName(event.title, index + 1, di + 1, 'pdf', doc)}
-                              title="下载 PDF"
-                            >
-                              📕 {doc.name || `PDF${di + 1}`}
-                            </a>
+                            <span key={`${step.id}-pdf-${di}`} className="step-doc-actions">
+                              <span className="step-doc-name-inline" title={doc.name}>
+                                📕 {doc.name || `PDF${di + 1}`}
+                              </span>
+                              <button
+                                type="button"
+                                className="step-doc-download"
+                                title="下载 PDF"
+                                onClick={() =>
+                                  void handleDownloadDataUrl(
+                                    doc.dataUrl,
+                                    buildStepDocumentDownloadName(event.title, index + 1, di + 1, 'pdf', doc)
+                                  )
+                                }
+                              >
+                                下载
+                              </button>
+                            </span>
                           ))}
                         </div>
                       )}

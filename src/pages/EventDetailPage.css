@@ -458,6 +458,11 @@
 .step-status-image-link {
   display: inline-flex;
   align-items: center;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 .step-status-image-actions {
@@ -483,12 +488,14 @@
 
 .step-status-image-download {
   font-size: 0.72rem;
+  font-family: inherit;
   color: #1976d2;
   text-decoration: none;
   border: 1px solid #bbdefb;
   background: #e3f2fd;
   border-radius: 4px;
   padding: 0.1rem 0.35rem;
+  cursor: pointer;
 }
 
 .step-status-image-download:hover {
@@ -525,18 +532,32 @@
   font-weight: 500;
 }
 
-.step-doc-download {
-  font-size: 0.72rem;
-  color: #1565c0;
-  text-decoration: none;
-  border: 1px solid #bbdefb;
-  background: #e3f2fd;
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-  max-width: 200px;
+.step-doc-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+}
+
+.step-doc-name-inline {
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 0.72rem;
+  color: #333;
+}
+
+.step-doc-download {
+  font-size: 0.72rem;
+  font-family: inherit;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  cursor: pointer;
+  color: #1565c0;
+  border: 1px solid #bbdefb;
+  background: #e3f2fd;
 }
 
 .step-doc-download:hover {

@@ -273,14 +273,42 @@
   border: 1px solid #ddd;
 }
 
+.step-history-image-preview-btn {
+  display: inline-flex;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.step-doc-history-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.step-doc-history-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: #333;
+}
+
 .step-status-image-download {
   font-size: 0.8rem;
+  font-family: inherit;
   color: #1565c0;
   text-decoration: none;
   border: 1px solid #bbdefb;
   background: #e3f2fd;
   border-radius: 4px;
   padding: 0.15rem 0.45rem;
+  cursor: pointer;
 }
 
 .step-status-image-download:hover {
