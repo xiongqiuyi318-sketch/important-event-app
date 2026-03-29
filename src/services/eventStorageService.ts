@@ -12,7 +12,6 @@ import {
   updateEvent as updateLocalEvent,
 } from '../utils/storage';
 
-const ACCESS_MODE_KEY = 'app_access_mode';
 const PROVIDER = (import.meta.env.VITE_STORAGE_PROVIDER || 'local').toLowerCase();
 
 const hasEditorAccess = async (): Promise<boolean> => {
