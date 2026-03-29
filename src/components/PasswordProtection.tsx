@@ -7,7 +7,7 @@ interface PasswordProtectionProps {
 }
 
 export default function PasswordProtection({ children }: PasswordProtectionProps) {
-  const { mode, loading, continueAsGuest, signInEditor } = useAccess();
+  const { mode, loading, signInEditor } = useAccess();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -47,7 +47,7 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
     );
   }
 
-  if (mode === 'guest' || mode === 'editor') {
+  if (mode === 'editor') {
     return <>{children}</>;
   }
 
@@ -56,7 +56,7 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
       <div className="password-container">
         <div className="password-box">
           <h2>重要事件备忘录</h2>
-          <p className="password-hint">访客可只读浏览，编辑者登录后可创建和修改事件（同设备会长期保持登录，直到手动退出）</p>
+          <p className="password-hint">编辑者登录后可创建和修改事件。</p>
           <form onSubmit={handleSubmit}>
             <input
               type="email"
@@ -84,13 +84,7 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
               <button type="submit" className="password-submit" disabled={submitting}>
                 {submitting ? '登录中...' : '编辑者登录'}
               </button>
-              <button
-                type="button"
-                className="password-submit secondary"
-                onClick={continueAsGuest}
-              >
-                访客进入（只读）
-              </button>
+              {/* 仅保留编辑者登录 */}
             </div>
           </form>
         </div>

@@ -13,7 +13,6 @@ import {
 } from '../utils/storage';
 
 const ACCESS_MODE_KEY = 'app_access_mode';
-const GUEST_MODE_VALUE = 'guest';
 const PROVIDER = (import.meta.env.VITE_STORAGE_PROVIDER || 'local').toLowerCase();
 
 const hasEditorAccess = async (): Promise<boolean> => {
@@ -23,12 +22,12 @@ const hasEditorAccess = async (): Promise<boolean> => {
     return Boolean(data.session?.user);
   }
 
-  // 无 Supabase 时，仅允许非访客模式写入（向后兼容本地存储场景）
-  return localStorage.getItem(ACCESS_MODE_KEY) !== GUEST_MODE_VALUE;
+  // 无 Supabase 时，默认允许写入本地存储
+  return true;
 };
 
 const denyWrite = () => {
-  alert('当前为访客只读模式，无法创建或修改事件。请使用编辑者账号登录。');
+  alert('当前为只读模式，无法创建或修改事件。请使用编辑者账号登录。');
 };
 
 const checkEventExpired = (event: Event): boolean => {

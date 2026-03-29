@@ -586,7 +586,9 @@ export default function EventDetailPage() {
                           <button onClick={() => void handleUpdateStepTime(step.id)} disabled={!canEdit}>保存</button>
                           <button onClick={() => { setEditingTimeId(null); setEditingTime(''); }}>取消</button>
                         </div>
-                      ) : (
+                      ) : null}
+
+                      {editingTimeId === step.id ? null : (
                         <button
                           className="btn-meta-compact"
                           onClick={() => {
@@ -608,9 +610,19 @@ export default function EventDetailPage() {
                             onChange={(e) => setEditingStatus(e.target.value)}
                             placeholder="状态描述..."
                           />
+                          {/* 自定义“选择图片”按钮，隐藏原生文件输入 */}
+                          <label
+                            htmlFor={`img-file-${step.id}`}
+                            className="step-status-image-download"
+                            title="选择图片"
+                          >
+                            选择图片
+                          </label>
                           <input
+                            id={`img-file-${step.id}`}
                             type="file"
                             accept="image/*"
+                            style={{ display: 'none' }}
                             disabled={editingStatusImages.length >= 3}
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
@@ -811,7 +823,9 @@ export default function EventDetailPage() {
                             setEditingPdfDocs([]);
                           }}>取消</button>
                         </div>
-                      ) : (
+                      ) : null}
+
+                      {editingStatusId === step.id ? null : (
                         <button
                           className="btn-meta-compact"
                           onClick={() => {

@@ -39,7 +39,7 @@ function Header() {
         </Link>
       </nav>
       <span className={`access-mode ${canEdit ? 'editor' : 'guest'}`}>
-        {canEdit ? '编辑者模式' : '访客只读'}
+        {canEdit ? '编辑者模式' : '只读'}
       </span>
       <button 
         className="logout-btn"

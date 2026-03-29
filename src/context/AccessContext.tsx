@@ -3,14 +3,12 @@ import { supabase } from '../lib/supabase';
 import { AccessMode, AuthResult, AuthUser } from '../types/storage';
 
 const ACCESS_MODE_KEY = 'app_access_mode';
-const GUEST_MODE_VALUE = 'guest' as const;
 
 interface AccessContextValue {
   mode: AccessMode;
   canEdit: boolean;
   user: AuthUser | null;
   loading: boolean;
-  continueAsGuest: () => void;
   signInEditor: (email: string, password: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
 }
@@ -25,11 +23,7 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!supabase) {
       const savedMode = localStorage.getItem(ACCESS_MODE_KEY) as AccessMode;
-      if (savedMode === GUEST_MODE_VALUE) {
-        setMode(GUEST_MODE_VALUE);
-      } else {
-        setMode(null);
-      }
+      setMode(savedMode || null);
       setLoading(false);
       return;
     }
@@ -50,7 +44,7 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
         setUser({ id: sessionUser.id, email: sessionUser.email || '' });
       } else {
         const savedMode = localStorage.getItem(ACCESS_MODE_KEY) as AccessMode;
-        setMode(savedMode === GUEST_MODE_VALUE ? GUEST_MODE_VALUE : null);
+        setMode(savedMode || null);
         setUser(null);
       }
       setLoading(false);
@@ -72,7 +66,7 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
 
       if (event === 'SIGNED_OUT') {
         const savedMode = localStorage.getItem(ACCESS_MODE_KEY) as AccessMode;
-        setMode(savedMode === GUEST_MODE_VALUE ? GUEST_MODE_VALUE : null);
+        setMode(savedMode || null);
         setUser(null);
       }
     });
@@ -85,11 +79,7 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const continueAsGuest = () => {
-    localStorage.setItem(ACCESS_MODE_KEY, GUEST_MODE_VALUE);
-    setMode(GUEST_MODE_VALUE);
-    setUser(null);
-  };
+  // no boss entry
 
   const signInEditor = async (email: string, password: string): Promise<AuthResult> => {
     if (!supabase) {
@@ -139,7 +129,6 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
         canEdit: Boolean(user),
         user,
         loading,
-        continueAsGuest,
         signInEditor,
         signOut,
       };

@@ -1,6 +1,6 @@
 import { Event } from './index';
 
-export type AccessMode = 'guest' | 'editor' | null;
+export type AccessMode = 'editor' | null;
 
 export interface AuthUser {
   id: string;
