@@ -10,12 +10,18 @@ import CalendarSyncButton from '../components/CalendarSyncButton';
 import './HomePage.css';
 
 export default function HomePage() {
+  const isEventUpdated = useCallback((event: Event): boolean => {
+    if (!event.updatedAt) return false;
+    return new Date(event.updatedAt).getTime() > new Date(event.createdAt).getTime() + 1000;
+  }, []);
+
   const navigate = useNavigate();
   const { canEdit } = useAccess();
   const [events, setEvents] = useState<Event[]>([]);
   const [completedCount, setCompletedCount] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [showUpdatedOnly, setShowUpdatedOnly] = useState(false);
 
   const loadEventsData = useCallback(async () => {
     const loadedEvents = await loadEvents();
@@ -51,6 +57,10 @@ export default function HomePage() {
   }, []);
 
   const eventsByPriority = useMemo(() => {
+    const filteredEvents = showUpdatedOnly
+      ? events.filter(isEventUpdated)
+      : events;
+
     const priorityGroups = {
       1: [] as Event[],
       2: [] as Event[],
@@ -58,7 +68,7 @@ export default function HomePage() {
       4: [] as Event[],
     };
     
-    events.forEach(event => {
+    filteredEvents.forEach(event => {
       priorityGroups[event.priority as EventPriority].push(event);
     });
     
@@ -68,7 +78,7 @@ export default function HomePage() {
       3: priorityGroups[3].sort(sortEvents),
       4: priorityGroups[4].sort(sortEvents),
     };
-  }, [events, sortEvents]);
+  }, [events, sortEvents, showUpdatedOnly, isEventUpdated]);
 
   const stats = useMemo(() => ({
     total: events.length,
@@ -76,7 +86,8 @@ export default function HomePage() {
     important: eventsByPriority[2].length,
     normal: eventsByPriority[3].length,
     low: eventsByPriority[4].length,
-  }), [events, eventsByPriority]);
+    updated: events.filter(isEventUpdated).length,
+  }), [events, eventsByPriority, isEventUpdated]);
 
   return (
     <div className="home-page">
@@ -89,6 +100,7 @@ export default function HomePage() {
             <span className="dot-item" title="重要">🟠{stats.important}</span>
             <span className="dot-item" title="一般">🔵{stats.normal}</span>
             <span className="dot-item" title="其他">⚪{stats.low}</span>
+            <span className="dot-item updated" title="已更新">🟡{stats.updated}</span>
           </span>
         </div>
         <button 
@@ -111,6 +123,13 @@ export default function HomePage() {
           }}
         >
           + 新建
+        </button>
+        <button
+          className={`btn-filter ${showUpdatedOnly ? 'active' : ''}`}
+          onClick={() => setShowUpdatedOnly((prev) => !prev)}
+          title="切换只看已更新事件"
+        >
+          {showUpdatedOnly ? '✅ 只看已更新' : '🟡 只看已更新'}
         </button>
         <CalendarSyncButton variant="all" />
         <DataManager onDataChanged={() => void loadEventsData()} canEdit={canEdit} />

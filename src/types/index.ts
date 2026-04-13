@@ -53,6 +53,7 @@ export interface Event {
   startTime?: string; // ISO date string (optional)
   steps: EventStep[];
   createdAt: string; // ISO date string
+  updatedAt?: string; // ISO date string，最近更新时间
   completed: boolean;
   expired: boolean;
   sortOrder: number; // 用于手动排序

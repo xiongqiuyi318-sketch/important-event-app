@@ -203,6 +203,7 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
 
     // 验证通过：保存数据
     const currentEvents = await loadEvents();
+    const nowIso = new Date().toISOString();
     const eventData: Event = {
       id: event?.id || `event-${Date.now()}`,
       title: title.trim(),
@@ -212,7 +213,8 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
       deadline: deadline ? new Date(deadline).toISOString() : undefined,
       startTime: startTime ? new Date(startTime).toISOString() : undefined,
       steps: steps.map((s, index) => ({ ...s, order: index })),
-      createdAt: event?.createdAt || new Date().toISOString(),
+      createdAt: event?.createdAt || nowIso,
+      updatedAt: event?.updatedAt || event?.createdAt || nowIso,
       completed: event?.completed || false,
       expired: false,
       sortOrder: event?.sortOrder || currentEvents.filter(e => e.priority === priority).length,

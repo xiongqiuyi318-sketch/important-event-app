@@ -58,6 +58,16 @@
   flex-shrink: 0;
 }
 
+.compact-updated-badge {
+  padding: 0.2rem 0.45rem;
+  background: #fff3cd;
+  color: #8a6d3b;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 .sort-buttons {
   display: flex;
   gap: 0.25rem;

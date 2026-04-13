@@ -30,6 +30,9 @@ export default function EventCardCompact({
   const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
 
   const isOverdue = daysUntilDeadline !== null && daysUntilDeadline < 0;
+  const isUpdated =
+    Boolean(event.updatedAt) &&
+    new Date(event.updatedAt!).getTime() > new Date(event.createdAt).getTime() + 1000;
 
   const handleClick = () => {
     navigate(`/event/${event.id}`);
@@ -60,6 +63,7 @@ export default function EventCardCompact({
         <h3 className={`compact-title ${isOverdue ? 'overdue-text' : ''}`}>
           {event.title}
         </h3>
+        {isUpdated && <span className="compact-updated-badge">已更新</span>}
         <span className="compact-category">{event.category}</span>
         {(onMoveUp || onMoveDown) && (
           <div className="sort-buttons" onClick={(e) => e.stopPropagation()}>

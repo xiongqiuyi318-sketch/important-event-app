@@ -1,7 +1,7 @@
 import { Event, EventsState } from '../types';
 
 const STORAGE_KEY = 'important-events-memo';
-const DATA_VERSION = 4; // 数据版本号，当数据结构变化时递增
+const DATA_VERSION = 5; // 数据版本号，当数据结构变化时递增
 
 // 检查事件是否过期
 const checkEventExpired = (event: Event): boolean => {
@@ -71,6 +71,14 @@ const migrateData = (data: any, version: number): EventsState => {
     }));
   }
 
+  // v4 -> v5：事件新增 updatedAt 字段
+  if (version < 5) {
+    safe.events = safe.events.map((event: any) => ({
+      ...event,
+      updatedAt: event?.updatedAt || event?.createdAt || new Date().toISOString(),
+    }));
+  }
+
   return safe;
 };
 
@@ -132,7 +140,10 @@ export const saveEvents = (events: Event[]): void => {
 
 export const addEvent = (event: Event): void => {
   const events = loadEvents();
-  events.push(event);
+  events.push({
+    ...event,
+    updatedAt: event.updatedAt || event.createdAt || new Date().toISOString(),
+  });
   saveEvents(events);
 };
 
@@ -140,7 +151,7 @@ export const updateEvent = (id: string, updates: Partial<Event>): void => {
   const events = loadEvents();
   const index = events.findIndex(e => e.id === id);
   if (index !== -1) {
-    events[index] = { ...events[index], ...updates };
+    events[index] = { ...events[index], ...updates, updatedAt: new Date().toISOString() };
     saveEvents(events);
   }
 };

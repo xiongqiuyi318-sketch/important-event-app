@@ -105,6 +105,7 @@ class SupabaseStorageAdapter implements StorageAdapter {
       startTime: row.start_time || undefined,
       steps: row.steps || [],
       createdAt: row.created_at,
+      updatedAt: row.updated_at || row.created_at,
       completed: row.completed,
       expired: row.expired,
       sortOrder: row.sort_order,
@@ -160,6 +161,7 @@ class SupabaseStorageAdapter implements StorageAdapter {
       expired: checkEventExpired(event),
       sort_order: event.sortOrder,
       is_public: true,
+      updated_at: event.updatedAt || event.createdAt,
     };
     const { error } = await client.from('events').insert(payload);
     if (error) {
@@ -179,6 +181,7 @@ class SupabaseStorageAdapter implements StorageAdapter {
     if (updates.steps !== undefined) payload.steps = updates.steps;
     if (updates.completed !== undefined) payload.completed = updates.completed;
     if (updates.sortOrder !== undefined) payload.sort_order = updates.sortOrder;
+    payload.updated_at = new Date().toISOString();
 
     // 以最新状态为准重新计算过期字段
     const { data: currentRow, error: currentError } = await client
