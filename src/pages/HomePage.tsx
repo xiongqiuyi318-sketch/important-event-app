@@ -96,11 +96,11 @@ export default function HomePage() {
         <div className="stats-info">
           <span className="stats-label">📋 待办 ({stats.total})</span>
           <span className="stats-dots">
-            <span className="dot-item" title="紧急">🔴{stats.urgent}</span>
-            <span className="dot-item" title="重要">🟠{stats.important}</span>
-            <span className="dot-item" title="一般">🔵{stats.normal}</span>
-            <span className="dot-item" title="其他">⚪{stats.low}</span>
-            <span className="dot-item updated" title="已更新">🟡{stats.updated}</span>
+            <span className="dot-item" title="紧急且重要">🔴紧急 {stats.urgent}</span>
+            <span className="dot-item" title="重要">🟠重要 {stats.important}</span>
+            <span className="dot-item" title="一般">🔵一般 {stats.normal}</span>
+            <span className="dot-item" title="不紧急不重要">⚪不紧急不重要 {stats.low}</span>
+            <span className="dot-item updated" title="已更新">🟡已更新 {stats.updated}</span>
           </span>
         </div>
         <button 

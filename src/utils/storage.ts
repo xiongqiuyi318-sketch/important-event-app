@@ -1,7 +1,7 @@
 import { Event, EventsState } from '../types';
 
 const STORAGE_KEY = 'important-events-memo';
-const DATA_VERSION = 5; // 数据版本号，当数据结构变化时递增
+const DATA_VERSION = 6; // 数据版本号，当数据结构变化时递增
 
 // 检查事件是否过期
 const checkEventExpired = (event: Event): boolean => {
@@ -79,6 +79,14 @@ const migrateData = (data: any, version: number): EventsState => {
     }));
   }
 
+  // v5 -> v6：事件新增 updatedByDevice 字段
+  if (version < 6) {
+    safe.events = safe.events.map((event: any) => ({
+      ...event,
+      updatedByDevice: event?.updatedByDevice,
+    }));
+  }
+
   return safe;
 };
 
@@ -143,6 +151,7 @@ export const addEvent = (event: Event): void => {
   events.push({
     ...event,
     updatedAt: event.updatedAt || event.createdAt || new Date().toISOString(),
+    updatedByDevice: event.updatedByDevice,
   });
   saveEvents(events);
 };
@@ -151,7 +160,12 @@ export const updateEvent = (id: string, updates: Partial<Event>): void => {
   const events = loadEvents();
   const index = events.findIndex(e => e.id === id);
   if (index !== -1) {
-    events[index] = { ...events[index], ...updates, updatedAt: new Date().toISOString() };
+    events[index] = {
+      ...events[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+      updatedByDevice: updates.updatedByDevice ?? events[index].updatedByDevice,
+    };
     saveEvents(events);
   }
 };

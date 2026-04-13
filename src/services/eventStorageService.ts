@@ -11,6 +11,7 @@ import {
   reorderEvents as reorderLocalEvents,
   updateEvent as updateLocalEvent,
 } from '../utils/storage';
+import { getCurrentDeviceLabel } from '../utils/deviceInfo';
 
 const PROVIDER = (import.meta.env.VITE_STORAGE_PROVIDER || 'local').toLowerCase();
 
@@ -54,6 +55,7 @@ type EventRow = {
   is_public: boolean;
   created_at: string;
   updated_at: string;
+  updated_by_device?: string | null;
 };
 
 class LocalStorageAdapter implements StorageAdapter {
@@ -106,6 +108,7 @@ class SupabaseStorageAdapter implements StorageAdapter {
       steps: row.steps || [],
       createdAt: row.created_at,
       updatedAt: row.updated_at || row.created_at,
+      updatedByDevice: row.updated_by_device || undefined,
       completed: row.completed,
       expired: row.expired,
       sortOrder: row.sort_order,
@@ -162,8 +165,14 @@ class SupabaseStorageAdapter implements StorageAdapter {
       sort_order: event.sortOrder,
       is_public: true,
       updated_at: event.updatedAt || event.createdAt,
+      updated_by_device: event.updatedByDevice || null,
     };
-    const { error } = await client.from('events').insert(payload);
+    let { error } = await client.from('events').insert(payload);
+    if (error && error.message.includes('updated_by_device')) {
+      const fallbackPayload = { ...payload };
+      delete (fallbackPayload as Record<string, unknown>).updated_by_device;
+      ({ error } = await client.from('events').insert(fallbackPayload));
+    }
     if (error) {
       throw new Error(error.message);
     }
@@ -181,6 +190,7 @@ class SupabaseStorageAdapter implements StorageAdapter {
     if (updates.steps !== undefined) payload.steps = updates.steps;
     if (updates.completed !== undefined) payload.completed = updates.completed;
     if (updates.sortOrder !== undefined) payload.sort_order = updates.sortOrder;
+    if (updates.updatedByDevice !== undefined) payload.updated_by_device = updates.updatedByDevice ?? null;
     payload.updated_at = new Date().toISOString();
 
     // 以最新状态为准重新计算过期字段
@@ -199,7 +209,12 @@ class SupabaseStorageAdapter implements StorageAdapter {
     };
     payload.expired = checkEventExpired(mergedEvent);
 
-    const { error } = await client.from('events').update(payload).eq('id', id);
+    let { error } = await client.from('events').update(payload).eq('id', id);
+    if (error && error.message.includes('updated_by_device')) {
+      const fallbackPayload = { ...payload };
+      delete (fallbackPayload as Record<string, unknown>).updated_by_device;
+      ({ error } = await client.from('events').update(fallbackPayload).eq('id', id));
+    }
     if (error) {
       throw new Error(error.message);
     }
@@ -282,7 +297,10 @@ export const addEvent = async (event: Event): Promise<boolean> => {
     denyWrite();
     return false;
   }
-  await adapter.addEvent(event);
+  await adapter.addEvent({
+    ...event,
+    updatedByDevice: getCurrentDeviceLabel(),
+  });
   return true;
 };
 
@@ -291,7 +309,10 @@ export const updateEvent = async (id: string, updates: Partial<Event>): Promise<
     denyWrite();
     return false;
   }
-  await adapter.updateEvent(id, updates);
+  await adapter.updateEvent(id, {
+    ...updates,
+    updatedByDevice: getCurrentDeviceLabel(),
+  });
   return true;
 };
 

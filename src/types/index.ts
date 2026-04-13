@@ -54,6 +54,7 @@ export interface Event {
   steps: EventStep[];
   createdAt: string; // ISO date string
   updatedAt?: string; // ISO date string，最近更新时间
+  updatedByDevice?: string; // 最近更新所使用的设备
   completed: boolean;
   expired: boolean;
   sortOrder: number; // 用于手动排序

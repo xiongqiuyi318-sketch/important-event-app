@@ -18,6 +18,13 @@ export default function EventCardCompact({
   canMoveDown = false 
 }: EventCardCompactProps) {
   const navigate = useNavigate();
+  const formatUpdatedDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
 
   const daysUntilDeadline = event.deadline
     ? Math.ceil(
@@ -63,7 +70,12 @@ export default function EventCardCompact({
         <h3 className={`compact-title ${isOverdue ? 'overdue-text' : ''}`}>
           {event.title}
         </h3>
-        {isUpdated && <span className="compact-updated-badge">已更新</span>}
+        {isUpdated && event.updatedAt && (
+          <span className="compact-updated-badge">
+            已更新，{formatUpdatedDate(event.updatedAt)}
+            {event.updatedByDevice ? `（${event.updatedByDevice}）` : ''}
+          </span>
+        )}
         <span className="compact-category">{event.category}</span>
         {(onMoveUp || onMoveDown) && (
           <div className="sort-buttons" onClick={(e) => e.stopPropagation()}>

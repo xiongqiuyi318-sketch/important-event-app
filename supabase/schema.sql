@@ -15,13 +15,16 @@ create table if not exists public.events (
   sort_order int not null default 0,
   is_public boolean not null default true,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  updated_by_device text
 );
 
 create table if not exists public.editor_users (
   user_id uuid primary key references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
 );
+
+alter table public.events add column if not exists updated_by_device text;
 
 alter table public.events enable row level security;
 alter table public.editor_users enable row level security;
