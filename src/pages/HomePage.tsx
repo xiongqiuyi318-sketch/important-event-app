@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Event, EventPriority } from '../types';
 import { useAccess } from '../context/AccessContext';
-import { loadEvents, getCompletedEventsCount, reorderEvents } from '../services/eventStorageService';
+import { loadEvents, reorderEvents } from '../services/eventStorageService';
+import { supabase } from '../lib/supabase';
 import EventForm from '../components/EventForm';
 import QuadrantViewCompact from '../components/QuadrantViewCompact';
 import DataManager from '../components/DataManager';
@@ -27,7 +28,7 @@ export default function HomePage() {
     const loadedEvents = await loadEvents();
     const activeEvents = loadedEvents.filter(e => !e.completed && !e.expired);
     setEvents(activeEvents);
-    const completed = await getCompletedEventsCount();
+    const completed = loadedEvents.filter((e) => e.completed).length;
     setCompletedCount(completed);
   }, []);
 
@@ -35,7 +36,27 @@ export default function HomePage() {
     loadEventsData();
   }, [loadEventsData]);
 
-  const handleEventSaved = useCallback(async () => {
+  useEffect(() => {
+    const client = supabase;
+    if (!client) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const channel = client
+      .channel('events-home-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          void loadEventsData();
+        }, 180);
+      })
+      .subscribe();
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      void client.removeChannel(channel);
+    };
+  }, [loadEventsData]);
+
+  const handleEventSaved = useCallback(async (_savedEvent?: Event) => {
     await loadEventsData();
     setShowForm(false);
     setEditingEvent(null);
@@ -138,7 +159,7 @@ export default function HomePage() {
       {showForm && (
         <EventForm
           event={editingEvent || undefined}
-          onSave={() => void handleEventSaved()}
+          onSave={(savedEvent) => void handleEventSaved(savedEvent)}
           canEdit={canEdit}
           onCancel={() => {
             setShowForm(false);

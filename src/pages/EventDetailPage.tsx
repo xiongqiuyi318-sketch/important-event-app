@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Event, StepAttachment, StepStatusImage } from '../types';
 import { useAccess } from '../context/AccessContext';
-import { loadEvents, updateEvent, deleteEvent } from '../services/eventStorageService';
+import { loadEventById, updateEvent, deleteEvent } from '../services/eventStorageService';
+import { resolveFileUrl, uploadStepDocument, uploadStepImage } from '../services/fileStorageService';
+import { supabase } from '../lib/supabase';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import EventForm from '../components/EventForm';
@@ -84,15 +86,6 @@ async function compressImageToDataUrl(
 
 const MAX_STEP_DOC_BYTES = 3 * 1024 * 1024;
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result || ''));
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
 function isExcelFile(file: File): boolean {
   const n = file.name.toLowerCase();
   if (n.endsWith('.xlsx') || n.endsWith('.xls') || n.endsWith('.xlsm')) return true;
@@ -128,9 +121,13 @@ export default function EventDetailPage() {
   const [editingPdfDocs, setEditingPdfDocs] = useState<StepAttachment[]>([]);
   const getStepStatusImages = (step: Event['steps'][number]): StepStatusImage[] => {
     if (Array.isArray(step.statusImages) && step.statusImages.length > 0) {
-      return step.statusImages.filter((img) => Boolean(img?.dataUrl)).slice(0, 3);
+      return step.statusImages
+        .filter((img) => Boolean(img?.dataUrl || img?.url || img?.storagePath))
+        .slice(0, 3);
     }
-    return step.statusImage?.dataUrl ? [step.statusImage] : [];
+    return step.statusImage && (step.statusImage.dataUrl || step.statusImage.url || step.statusImage.storagePath)
+      ? [step.statusImage]
+      : [];
   };
 
   const getStepAttachments = (
@@ -139,16 +136,46 @@ export default function EventDetailPage() {
   ): StepAttachment[] => {
     const arr = step[key];
     if (!Array.isArray(arr)) return [];
-    return arr.filter((d) => Boolean(d?.dataUrl)).slice(0, 3);
+    return arr.filter((d) => Boolean(d?.dataUrl || d?.url || d?.storagePath)).slice(0, 3);
   };
 
   const [editingTimeId, setEditingTimeId] = useState<string | null>(null);
   const [editingTime, setEditingTime] = useState('');
   const [editingReminderEnabled, setEditingReminderEnabled] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savingStepId, setSavingStepId] = useState<string | null>(null);
+  const savingRef = useRef(false);
+  const stripInlineDataForStorageFile = <T extends StepStatusImage | StepAttachment>(file: T): T => {
+    if (file.storagePath || file.url) {
+      const { dataUrl, ...rest } = file;
+      void dataUrl;
+      return rest as T;
+    }
+    return file;
+  };
+  const compactStepForPersist = (step: Event['steps'][number]): Event['steps'][number] => {
+    const statusImages = Array.isArray(step.statusImages)
+      ? step.statusImages.map((img) => stripInlineDataForStorageFile(img))
+      : step.statusImages;
+    const statusImage = step.statusImage ? stripInlineDataForStorageFile(step.statusImage) : step.statusImage;
+    const excelDocuments = Array.isArray(step.excelDocuments)
+      ? step.excelDocuments.map((doc) => stripInlineDataForStorageFile(doc))
+      : step.excelDocuments;
+    const pdfDocuments = Array.isArray(step.pdfDocuments)
+      ? step.pdfDocuments.map((doc) => stripInlineDataForStorageFile(doc))
+      : step.pdfDocuments;
+    return {
+      ...step,
+      statusImages,
+      statusImage,
+      excelDocuments,
+      pdfDocuments,
+    };
+  };
 
   const loadEventData = useCallback(async () => {
-    const events = await loadEvents();
-    const found = events.find(e => e.id === id);
+    if (!id) return;
+    const found = await loadEventById(id);
     if (found) {
       setEvent(found);
     } else {
@@ -159,6 +186,70 @@ export default function EventDetailPage() {
   useEffect(() => {
     void loadEventData();
   }, [loadEventData]);
+
+  useEffect(() => {
+    const client = supabase;
+    if (!client || !id) return;
+    const channel = client
+      .channel(`event-detail-${id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'events', filter: `id=eq.${id}` },
+        () => {
+          // 避免本地保存中的瞬时覆盖，完成后会再次通过 updated_at 对齐
+          if (!savingRef.current) {
+            void loadEventData();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void client.removeChannel(channel);
+    };
+  }, [id, loadEventData]);
+
+  const applyOptimisticEventUpdate = async (updates: Partial<Event>, stepId?: string): Promise<boolean> => {
+    if (!event) return false;
+    const previous = event;
+    const nextEvent: Event = {
+      ...event,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    setEvent(nextEvent);
+    setSaving(true);
+    setSavingStepId(stepId || null);
+    savingRef.current = true;
+    try {
+      const persistUpdates: Partial<Event> = { ...updates };
+      if (persistUpdates.steps) {
+        persistUpdates.steps = persistUpdates.steps.map((step) => compactStepForPersist(step));
+      }
+      const ok = await updateEvent(event.id, persistUpdates);
+      if (!ok) {
+        setEvent(previous);
+      }
+      return ok;
+    } catch {
+      setEvent(previous);
+      alert('保存失败，请稍后重试。');
+      return false;
+    } finally {
+      setSaving(false);
+      setSavingStepId(null);
+      savingRef.current = false;
+    }
+  };
+
+  const getAttachmentViewUrl = async (attachment: StepStatusImage | StepAttachment): Promise<string> => {
+    return resolveFileUrl({
+      dataUrl: attachment.dataUrl,
+      url: attachment.url,
+      storageBucket: attachment.storageBucket,
+      storagePath: attachment.storagePath,
+    });
+  };
 
   if (!event) {
     return <div className="loading">加载中...</div>;
@@ -197,8 +288,7 @@ export default function EventDetailPage() {
       step.id === stepId ? { ...step, completed: !step.completed } : step
     );
     const allCompleted = updatedSteps.every(step => step.completed);
-    await updateEvent(event.id, { steps: updatedSteps, completed: allCompleted });
-    await loadEventData();
+    await applyOptimisticEventUpdate({ steps: updatedSteps, completed: allCompleted }, stepId);
   };
 
   const handleAddStep = async () => {
@@ -210,10 +300,9 @@ export default function EventDetailPage() {
         completed: false,
         order: event.steps.length
       };
-      await updateEvent(event.id, { steps: [...event.steps, newStep] });
+      await applyOptimisticEventUpdate({ steps: [...event.steps, newStep] }, newStep.id);
       setNewStepContent('');
       setShowAddStep(false);
-      await loadEventData();
     }
   };
 
@@ -223,8 +312,7 @@ export default function EventDetailPage() {
       const updatedSteps = event.steps
         .filter(step => step.id !== stepId)
         .map((step, index) => ({ ...step, order: index }));
-      await updateEvent(event.id, { steps: updatedSteps });
-      await loadEventData();
+      await applyOptimisticEventUpdate({ steps: updatedSteps }, stepId);
     }
   };
 
@@ -234,10 +322,9 @@ export default function EventDetailPage() {
       const updatedSteps = event.steps.map(step =>
         step.id === stepId ? { ...step, content: editingStepContent.trim() } : step
       );
-      await updateEvent(event.id, { steps: updatedSteps });
+      await applyOptimisticEventUpdate({ steps: updatedSteps }, stepId);
       setEditingStepId(null);
       setEditingStepContent('');
-      await loadEventData();
     }
   };
 
@@ -248,20 +335,25 @@ export default function EventDetailPage() {
       step.id === stepId ? {
         ...step,
         status: statusTrimmed || undefined,
-        statusImages: editingStatusImages.length > 0 ? editingStatusImages.slice(0, 3) : undefined,
+        statusImages: editingStatusImages.length > 0
+          ? editingStatusImages.slice(0, 3).map((img) => stripInlineDataForStorageFile(img))
+          : undefined,
         // 保留单图字段用于兼容老展示逻辑
-        statusImage: editingStatusImages.length > 0 ? editingStatusImages[0] : undefined,
-        excelDocuments: editingExcelDocs.length > 0 ? editingExcelDocs.slice(0, 3) : undefined,
-        pdfDocuments: editingPdfDocs.length > 0 ? editingPdfDocs.slice(0, 3) : undefined,
+        statusImage: editingStatusImages.length > 0 ? stripInlineDataForStorageFile(editingStatusImages[0]) : undefined,
+        excelDocuments: editingExcelDocs.length > 0
+          ? editingExcelDocs.slice(0, 3).map((doc) => stripInlineDataForStorageFile(doc))
+          : undefined,
+        pdfDocuments: editingPdfDocs.length > 0
+          ? editingPdfDocs.slice(0, 3).map((doc) => stripInlineDataForStorageFile(doc))
+          : undefined,
       } : step
     );
-    await updateEvent(event.id, { steps: updatedSteps });
+    await applyOptimisticEventUpdate({ steps: updatedSteps }, stepId);
     setEditingStatusId(null);
     setEditingStatus('');
     setEditingStatusImages([]);
     setEditingExcelDocs([]);
     setEditingPdfDocs([]);
-    await loadEventData();
   };
 
   const handleUpdateStepTime = async (stepId: string) => {
@@ -273,11 +365,10 @@ export default function EventDetailPage() {
         reminderEnabled: editingReminderEnabled
       } : step
     );
-    await updateEvent(event.id, { steps: updatedSteps });
+    await applyOptimisticEventUpdate({ steps: updatedSteps }, stepId);
     setEditingTimeId(null);
     setEditingTime('');
     setEditingReminderEnabled(false);
-    await loadEventData();
   };
 
   const handleMoveStep = async (stepId: string, direction: 'up' | 'down') => {
@@ -294,8 +385,7 @@ export default function EventDetailPage() {
     sortedSteps[index].order = sortedSteps[swapIndex].order;
     sortedSteps[swapIndex].order = temp;
 
-    await updateEvent(event.id, { steps: sortedSteps });
-    await loadEventData();
+    await applyOptimisticEventUpdate({ steps: sortedSteps }, stepId);
   };
 
   const handleMarkComplete = async () => {
@@ -304,9 +394,10 @@ export default function EventDetailPage() {
     navigate('/');
   };
 
-  const handleOpenDataUrl = async (dataUrl: string) => {
+  const handleOpenAttachment = async (attachment: StepStatusImage | StepAttachment) => {
     try {
-      await openDataUrlInNewWindow(dataUrl);
+      const fileUrl = await getAttachmentViewUrl(attachment);
+      await openDataUrlInNewWindow(fileUrl);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'POPUP_BLOCKED') {
@@ -317,9 +408,13 @@ export default function EventDetailPage() {
     }
   };
 
-  const handleDownloadDataUrl = async (dataUrl: string, filename: string) => {
+  const handleDownloadAttachment = async (
+    attachment: StepStatusImage | StepAttachment,
+    filename: string
+  ) => {
     try {
-      await downloadDataUrlAsFile(dataUrl, filename);
+      const fileUrl = await getAttachmentViewUrl(attachment);
+      await downloadDataUrlAsFile(fileUrl, filename);
     } catch {
       alert('下载失败，请稍后再试；若在微信内，可尝试用系统浏览器打开本页后下载。');
     }
@@ -330,9 +425,11 @@ export default function EventDetailPage() {
       <div className="event-detail-page">
         <EventForm
           event={event}
-          onSave={() => {
+          onSave={(savedEvent) => {
+            if (savedEvent) {
+              setEvent(savedEvent);
+            }
             setShowEditForm(false);
-            void loadEventData();
           }}
           onCancel={() => setShowEditForm(false)}
           canEdit={canEdit}
@@ -492,11 +589,11 @@ export default function EventDetailPage() {
                                 type="button"
                                 className="step-status-image-link"
                                 title="查看大图"
-                                onClick={() => void handleOpenDataUrl(img.dataUrl)}
+                                onClick={() => void handleOpenAttachment(img)}
                               >
                                 <img
                                   className="step-status-image-thumb"
-                                  src={img.dataUrl}
+                                  src={img.dataUrl || img.url}
                                   alt={`状态图片${imgIndex + 1}`}
                                 />
                               </button>
@@ -505,9 +602,9 @@ export default function EventDetailPage() {
                                 className="step-status-image-download"
                                 title="下载该步骤图片"
                                 onClick={() =>
-                                  void handleDownloadDataUrl(
-                                    img.dataUrl,
-                                    `${buildStepImageFilename(event.title, index + 1, img.dataUrl, img.type).replace(/\.[^.]+$/, '')}-图${imgIndex + 1}.${getImageExtension(img.dataUrl, img.type)}`
+                                  void handleDownloadAttachment(
+                                    img,
+                                    `${buildStepImageFilename(event.title, index + 1, img.dataUrl, img.type, img.name).replace(/\.[^.]+$/, '')}-图${imgIndex + 1}.${getImageExtension(img.dataUrl, img.type, img.name)}`
                                   )
                                 }
                               >
@@ -530,8 +627,8 @@ export default function EventDetailPage() {
                                 className="step-doc-download"
                                 title="下载 Excel"
                                 onClick={() =>
-                                  void handleDownloadDataUrl(
-                                    doc.dataUrl,
+                                  void handleDownloadAttachment(
+                                    doc,
                                     buildStepDocumentDownloadName(event.title, index + 1, di + 1, 'excel', doc)
                                   )
                                 }
@@ -555,8 +652,8 @@ export default function EventDetailPage() {
                                 className="step-doc-download"
                                 title="下载 PDF"
                                 onClick={() =>
-                                  void handleDownloadDataUrl(
-                                    doc.dataUrl,
+                                  void handleDownloadAttachment(
+                                    doc,
                                     buildStepDocumentDownloadName(event.title, index + 1, di + 1, 'pdf', doc)
                                   )
                                 }
@@ -583,7 +680,9 @@ export default function EventDetailPage() {
                             />
                             提醒
                           </label>
-                          <button onClick={() => void handleUpdateStepTime(step.id)} disabled={!canEdit}>保存</button>
+                          <button onClick={() => void handleUpdateStepTime(step.id)} disabled={!canEdit || saving}>
+                            {saving && savingStepId === step.id ? '保存中...' : '保存'}
+                          </button>
                           <button onClick={() => { setEditingTimeId(null); setEditingTime(''); }}>取消</button>
                         </div>
                       ) : null}
@@ -648,16 +747,19 @@ export default function EventDetailPage() {
                                   return;
                                 }
 
-                                const nextImage: StepStatusImage = {
-                                  dataUrl,
-                                  name: file.name,
-                                  type: outBlob.type,
-                                  size: outBlob.size,
-                                  addedAt: new Date().toISOString()
+                                const nextImage = await uploadStepImage({
+                                  eventId: event.id,
+                                  stepId: step.id,
+                                  file,
+                                  blob: outBlob,
+                                });
+                                const withFallback: StepStatusImage = {
+                                  ...nextImage,
+                                  ...(nextImage.storagePath || nextImage.url ? {} : { dataUrl }),
                                 };
                                 setEditingStatusImages((prev) => {
                                   if (prev.length >= 3) return prev;
-                                  return [...prev, nextImage];
+                                  return [...prev, withFallback];
                                 });
                               } catch {
                                 alert('图片处理失败，请换一张图片重试。');
@@ -673,7 +775,7 @@ export default function EventDetailPage() {
                                 <div key={`preview-${imgIndex}`} className="status-image-preview-row">
                                   <img
                                     className="status-image-preview"
-                                    src={img.dataUrl}
+                                    src={img.dataUrl || img.url}
                                     alt={`预览${imgIndex + 1}`}
                                   />
                                   <button
@@ -715,14 +817,12 @@ export default function EventDetailPage() {
                                   return;
                                 }
                                 try {
-                                  const dataUrl = await fileToDataUrl(file);
-                                  const next: StepAttachment = {
-                                    dataUrl,
-                                    name: file.name,
-                                    type: file.type,
-                                    size: file.size,
-                                    addedAt: new Date().toISOString(),
-                                  };
+                                  const next = await uploadStepDocument({
+                                    eventId: event.id,
+                                    stepId: step.id,
+                                    file,
+                                    kind: 'excel',
+                                  });
                                   setEditingExcelDocs((prev) =>
                                     prev.length >= 3 ? prev : [...prev, next]
                                   );
@@ -777,14 +877,12 @@ export default function EventDetailPage() {
                                   return;
                                 }
                                 try {
-                                  const dataUrl = await fileToDataUrl(file);
-                                  const next: StepAttachment = {
-                                    dataUrl,
-                                    name: file.name,
-                                    type: file.type,
-                                    size: file.size,
-                                    addedAt: new Date().toISOString(),
-                                  };
+                                  const next = await uploadStepDocument({
+                                    eventId: event.id,
+                                    stepId: step.id,
+                                    file,
+                                    kind: 'pdf',
+                                  });
                                   setEditingPdfDocs((prev) =>
                                     prev.length >= 3 ? prev : [...prev, next]
                                   );
@@ -814,7 +912,9 @@ export default function EventDetailPage() {
                           )}
                           <span className="status-image-count-hint">PDF {editingPdfDocs.length}/3</span>
 
-                          <button onClick={() => void handleUpdateStepStatus(step.id)} disabled={!canEdit}>保存</button>
+                          <button onClick={() => void handleUpdateStepStatus(step.id)} disabled={!canEdit || saving}>
+                            {saving && savingStepId === step.id ? '保存中...' : '保存'}
+                          </button>
                           <button onClick={() => {
                             setEditingStatusId(null);
                             setEditingStatus('');

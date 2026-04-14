@@ -12,6 +12,7 @@ import {
   getImageExtension,
 } from '../utils/fileDownload';
 import { downloadDataUrlAsFile, openDataUrlInNewWindow } from '../utils/dataUrlActions';
+import { resolveFileUrl } from '../services/fileStorageService';
 import './HistoryPage.css';
 
 const dataUrlToBlob = async (dataUrl: string): Promise<Blob> => {
@@ -21,9 +22,13 @@ const dataUrlToBlob = async (dataUrl: string): Promise<Blob> => {
 
 const getStepStatusImages = (step: Event['steps'][number]): StepStatusImage[] => {
   if (Array.isArray(step.statusImages) && step.statusImages.length > 0) {
-    return step.statusImages.filter((img) => Boolean(img?.dataUrl)).slice(0, 3);
+    return step.statusImages
+      .filter((img) => Boolean(img?.dataUrl || img?.url || img?.storagePath))
+      .slice(0, 3);
   }
-  return step.statusImage?.dataUrl ? [step.statusImage] : [];
+  return step.statusImage && (step.statusImage.dataUrl || step.statusImage.url || step.statusImage.storagePath)
+    ? [step.statusImage]
+    : [];
 };
 
 const getStepAttachments = (
@@ -32,7 +37,7 @@ const getStepAttachments = (
 ): StepAttachment[] => {
   const arr = step[key];
   if (!Array.isArray(arr)) return [];
-  return arr.filter((d) => Boolean(d?.dataUrl)).slice(0, 3);
+  return arr.filter((d) => Boolean(d?.dataUrl || d?.url || d?.storagePath)).slice(0, 3);
 };
 
 const hasAnyStepAttachment = (event: Event): boolean => {
@@ -48,9 +53,10 @@ export default function HistoryPage() {
   const { canEdit } = useAccess();
   const [events, setEvents] = useState<Event[]>([]);
 
-  const handleOpenDataUrl = async (dataUrl: string) => {
+  const handleOpenDataUrl = async (attachment: StepStatusImage | StepAttachment) => {
     try {
-      await openDataUrlInNewWindow(dataUrl);
+      const fileUrl = await resolveFileUrl(attachment);
+      await openDataUrlInNewWindow(fileUrl);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'POPUP_BLOCKED') {
@@ -61,9 +67,10 @@ export default function HistoryPage() {
     }
   };
 
-  const handleDownloadDataUrl = async (dataUrl: string, filename: string) => {
+  const handleDownloadDataUrl = async (attachment: StepStatusImage | StepAttachment, filename: string) => {
     try {
-      await downloadDataUrlAsFile(dataUrl, filename);
+      const fileUrl = await resolveFileUrl(attachment);
+      await downloadDataUrlAsFile(fileUrl, filename);
     } catch {
       alert('下载失败，请稍后再试；若在微信内，可尝试用系统浏览器打开本页后下载。');
     }
@@ -113,15 +120,17 @@ export default function HistoryPage() {
       const images = getStepStatusImages(step);
       for (let j = 0; j < images.length; j++) {
         const image = images[j];
-        const blob = await dataUrlToBlob(image.dataUrl);
-        const filename = `${buildStepImageFilename(event.title, i + 1, image.dataUrl, image.type).replace(/\.[^.]+$/, '')}-图${j + 1}.${getImageExtension(image.dataUrl, image.type)}`;
+        const imageUrl = await resolveFileUrl(image);
+        const blob = await dataUrlToBlob(imageUrl);
+        const filename = `${buildStepImageFilename(event.title, i + 1, image.dataUrl, image.type, image.name).replace(/\.[^.]+$/, '')}-图${j + 1}.${getImageExtension(image.dataUrl, image.type, image.name)}`;
         folder.file(filename, blob);
         count++;
       }
       const excels = getStepAttachments(step, 'excelDocuments');
       for (let j = 0; j < excels.length; j++) {
         const doc = excels[j];
-        const blob = await dataUrlToBlob(doc.dataUrl);
+        const docUrl = await resolveFileUrl(doc);
+        const blob = await dataUrlToBlob(docUrl);
         const filename = buildStepDocumentDownloadName(event.title, i + 1, j + 1, 'excel', doc);
         folder.file(filename, blob);
         count++;
@@ -129,7 +138,8 @@ export default function HistoryPage() {
       const pdfs = getStepAttachments(step, 'pdfDocuments');
       for (let j = 0; j < pdfs.length; j++) {
         const doc = pdfs[j];
-        const blob = await dataUrlToBlob(doc.dataUrl);
+        const docUrl = await resolveFileUrl(doc);
+        const blob = await dataUrlToBlob(docUrl);
         const filename = buildStepDocumentDownloadName(event.title, i + 1, j + 1, 'pdf', doc);
         folder.file(filename, blob);
         count++;
@@ -254,11 +264,11 @@ export default function HistoryPage() {
                                       type="button"
                                       className="step-history-image-preview-btn"
                                       title="查看大图"
-                                      onClick={() => void handleOpenDataUrl(img.dataUrl)}
+                                      onClick={() => void handleOpenDataUrl(img)}
                                     >
                                       <img
                                         className="step-status-image-thumb"
-                                        src={img.dataUrl}
+                                        src={img.dataUrl || img.url}
                                         alt={`状态图片${imgIndex + 1}`}
                                       />
                                     </button>
@@ -268,13 +278,14 @@ export default function HistoryPage() {
                                       title="下载该步骤图片"
                                       onClick={() =>
                                         void handleDownloadDataUrl(
-                                          img.dataUrl,
+                                          img,
                                           `${buildStepImageFilename(
                                             event.title,
                                             index + 1,
                                             img.dataUrl,
-                                            img.type
-                                          ).replace(/\.[^.]+$/, '')}-图${imgIndex + 1}.${getImageExtension(img.dataUrl, img.type)}`
+                                            img.type,
+                                            img.name
+                                          ).replace(/\.[^.]+$/, '')}-图${imgIndex + 1}.${getImageExtension(img.dataUrl, img.type, img.name)}`
                                         )
                                       }
                                     >
@@ -297,7 +308,7 @@ export default function HistoryPage() {
                                       className="step-status-image-download"
                                       onClick={() =>
                                         void handleDownloadDataUrl(
-                                          doc.dataUrl,
+                                          doc,
                                           buildStepDocumentDownloadName(
                                             event.title,
                                             index + 1,
@@ -327,7 +338,7 @@ export default function HistoryPage() {
                                       className="step-status-image-download"
                                       onClick={() =>
                                         void handleDownloadDataUrl(
-                                          doc.dataUrl,
+                                          doc,
                                           buildStepDocumentDownloadName(
                                             event.title,
                                             index + 1,

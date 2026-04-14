@@ -1,7 +1,7 @@
 import { Event, EventsState } from '../types';
 
 const STORAGE_KEY = 'important-events-memo';
-const DATA_VERSION = 6; // 数据版本号，当数据结构变化时递增
+const DATA_VERSION = 7; // 数据版本号，当数据结构变化时递增
 
 // 检查事件是否过期
 const checkEventExpired = (event: Event): boolean => {
@@ -40,8 +40,10 @@ const migrateData = (data: any, version: number): EventsState => {
         ? event.steps.map((step: any) => {
             const legacyImage = step?.statusImage;
             const images = Array.isArray(step?.statusImages)
-              ? step.statusImages.filter((img: any) => Boolean(img?.dataUrl)).slice(0, 3)
-              : legacyImage?.dataUrl
+              ? step.statusImages
+                  .filter((img: any) => Boolean(img?.dataUrl || img?.url || img?.storagePath))
+                  .slice(0, 3)
+              : legacyImage?.dataUrl || legacyImage?.url || legacyImage?.storagePath
                 ? [legacyImage]
                 : [];
             return {
@@ -61,10 +63,14 @@ const migrateData = (data: any, version: number): EventsState => {
         ? event.steps.map((step: any) => ({
             ...step,
             excelDocuments: Array.isArray(step?.excelDocuments)
-              ? step.excelDocuments.filter((d: any) => Boolean(d?.dataUrl)).slice(0, 3)
+              ? step.excelDocuments
+                  .filter((d: any) => Boolean(d?.dataUrl || d?.url || d?.storagePath))
+                  .slice(0, 3)
               : undefined,
             pdfDocuments: Array.isArray(step?.pdfDocuments)
-              ? step.pdfDocuments.filter((d: any) => Boolean(d?.dataUrl)).slice(0, 3)
+              ? step.pdfDocuments
+                  .filter((d: any) => Boolean(d?.dataUrl || d?.url || d?.storagePath))
+                  .slice(0, 3)
               : undefined,
           }))
         : [],
@@ -84,6 +90,27 @@ const migrateData = (data: any, version: number): EventsState => {
     safe.events = safe.events.map((event: any) => ({
       ...event,
       updatedByDevice: event?.updatedByDevice,
+    }));
+  }
+
+  // v6 -> v7：步骤附件支持 storagePath/url 字段（无数据结构破坏，仅规范兼容字段）
+  if (version < 7) {
+    safe.events = safe.events.map((event: any) => ({
+      ...event,
+      steps: Array.isArray(event?.steps)
+        ? event.steps.map((step: any) => ({
+            ...step,
+            statusImages: Array.isArray(step?.statusImages)
+              ? step.statusImages.filter((img: any) => Boolean(img?.dataUrl || img?.url || img?.storagePath))
+              : step?.statusImages,
+            excelDocuments: Array.isArray(step?.excelDocuments)
+              ? step.excelDocuments.filter((d: any) => Boolean(d?.dataUrl || d?.url || d?.storagePath))
+              : step?.excelDocuments,
+            pdfDocuments: Array.isArray(step?.pdfDocuments)
+              ? step.pdfDocuments.filter((d: any) => Boolean(d?.dataUrl || d?.url || d?.storagePath))
+              : step?.pdfDocuments,
+          }))
+        : [],
     }));
   }
 

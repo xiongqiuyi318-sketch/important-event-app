@@ -14,12 +14,37 @@ import {
 import { getCurrentDeviceLabel } from '../utils/deviceInfo';
 
 const PROVIDER = (import.meta.env.VITE_STORAGE_PROVIDER || 'local').toLowerCase();
+let lastEditorAccessCheckAt = 0;
+let lastEditorAccessValue: boolean | null = null;
+const EDITOR_ACCESS_CACHE_MS = 10_000;
+const EVENTS_CACHE_MS = 4_000;
+let eventsCache: { at: number; data: Event[] } | null = null;
+
+const setEventsCache = (events: Event[]) => {
+  eventsCache = { at: Date.now(), data: events };
+};
+
+const getEventsCache = (): Event[] | null => {
+  if (!eventsCache) return null;
+  if (Date.now() - eventsCache.at > EVENTS_CACHE_MS) return null;
+  return eventsCache.data;
+};
+
+const invalidateEventsCache = () => {
+  eventsCache = null;
+};
 
 const hasEditorAccess = async (): Promise<boolean> => {
   if (supabase) {
+    const now = Date.now();
+    if (lastEditorAccessValue !== null && now - lastEditorAccessCheckAt < EDITOR_ACCESS_CACHE_MS) {
+      return lastEditorAccessValue;
+    }
     const { data, error } = await supabase.auth.getSession();
-    if (error) return false;
-    return Boolean(data.session?.user);
+    const allowed = !error && Boolean(data.session?.user);
+    lastEditorAccessCheckAt = now;
+    lastEditorAccessValue = allowed;
+    return allowed;
   }
 
   // 无 Supabase 时，默认允许写入本地存储
@@ -65,6 +90,11 @@ class LocalStorageAdapter implements StorageAdapter {
 
   async getAllEvents(): Promise<Event[]> {
     return loadAllLocalEvents();
+  }
+
+  async getEventById(id: string): Promise<Event | null> {
+    const events = loadAllLocalEvents();
+    return events.find((e) => e.id === id) || null;
   }
 
   async addEvent(event: Event): Promise<void> {
@@ -147,6 +177,20 @@ class SupabaseStorageAdapter implements StorageAdapter {
     return this.getEvents();
   }
 
+  async getEventById(id: string): Promise<Event | null> {
+    const client = this.ensureClient();
+    const { data, error } = await client
+      .from('events')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) {
+      throw new Error(error.message);
+    }
+    if (!data) return null;
+    return this.mapRowToEvent(data as EventRow);
+  }
+
   async addEvent(event: Event): Promise<void> {
     const client = this.ensureClient();
     const userId = await this.getEditorUserId();
@@ -192,22 +236,7 @@ class SupabaseStorageAdapter implements StorageAdapter {
     if (updates.sortOrder !== undefined) payload.sort_order = updates.sortOrder;
     if (updates.updatedByDevice !== undefined) payload.updated_by_device = updates.updatedByDevice ?? null;
     payload.updated_at = new Date().toISOString();
-
-    // 以最新状态为准重新计算过期字段
-    const { data: currentRow, error: currentError } = await client
-      .from('events')
-      .select('*')
-      .eq('id', id)
-      .single();
-    if (currentError) {
-      throw new Error(currentError.message);
-    }
-    const merged: Event = this.mapRowToEvent(currentRow as EventRow);
-    const mergedEvent: Event = {
-      ...merged,
-      ...updates,
-    };
-    payload.expired = checkEventExpired(mergedEvent);
+    // 过期状态在读取时会按 deadline/completed 实时计算，这里避免额外查询以提升写入性能。
 
     let { error } = await client.from('events').update(payload).eq('id', id);
     if (error && error.message.includes('updated_by_device')) {
@@ -285,8 +314,26 @@ const createAdapter = (): StorageAdapter => {
 
 const adapter = createAdapter();
 
-export const loadEvents = async (): Promise<Event[]> => adapter.getEvents();
-export const loadAllEvents = async (): Promise<Event[]> => adapter.getAllEvents();
+export const loadEventById = async (id: string): Promise<Event | null> => {
+  const cached = getEventsCache();
+  if (cached) {
+    const fromCache = cached.find((event) => event.id === id);
+    if (fromCache) return fromCache;
+  }
+  return adapter.getEventById(id);
+};
+export const loadEvents = async (): Promise<Event[]> => {
+  const cached = getEventsCache();
+  if (cached) return cached;
+  const data = await adapter.getEvents();
+  setEventsCache(data);
+  return data;
+};
+export const loadAllEvents = async (): Promise<Event[]> => {
+  const data = await adapter.getAllEvents();
+  setEventsCache(data);
+  return data;
+};
 export const getCompletedEventsCount = async (): Promise<number> => {
   const allEvents = await adapter.getAllEvents();
   return allEvents.filter((event) => event.completed).length;
@@ -301,6 +348,7 @@ export const addEvent = async (event: Event): Promise<boolean> => {
     ...event,
     updatedByDevice: getCurrentDeviceLabel(),
   });
+  invalidateEventsCache();
   return true;
 };
 
@@ -313,6 +361,7 @@ export const updateEvent = async (id: string, updates: Partial<Event>): Promise<
     ...updates,
     updatedByDevice: getCurrentDeviceLabel(),
   });
+  invalidateEventsCache();
   return true;
 };
 
@@ -322,6 +371,7 @@ export const deleteEvent = async (id: string): Promise<boolean> => {
     return false;
   }
   await adapter.deleteEvent(id);
+  invalidateEventsCache();
   return true;
 };
 
@@ -331,6 +381,7 @@ export const deleteMultipleEvents = async (ids: string[]): Promise<boolean> => {
     return false;
   }
   await adapter.deleteMultipleEvents(ids);
+  invalidateEventsCache();
   return true;
 };
 
@@ -340,6 +391,7 @@ export const reorderEvents = async (id: string, direction: 'up' | 'down', priori
     return false;
   }
   await adapter.reorderEvents(id, direction, priority);
+  invalidateEventsCache();
   return true;
 };
 
@@ -355,5 +407,6 @@ export const deleteAllCompletedEvents = async (): Promise<number> => {
   const completedIds = allEvents.filter((event) => event.completed).map((event) => event.id);
   if (completedIds.length === 0) return 0;
   await adapter.deleteMultipleEvents(completedIds);
+  invalidateEventsCache();
   return completedIds.length;
 };

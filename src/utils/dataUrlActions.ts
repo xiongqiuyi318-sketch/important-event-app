@@ -6,6 +6,18 @@ export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
 
 /** 触发下载（优先走 Blob URL，避免 data: 链接在移动端被忽略或打开为空白页） */
 export async function downloadDataUrlAsFile(dataUrl: string, filename: string): Promise<void> {
+  if (!dataUrl.startsWith('data:')) {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    a.rel = 'noopener';
+    a.target = '_blank';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return;
+  }
   const blob = await dataUrlToBlob(dataUrl);
   const url = URL.createObjectURL(blob);
   try {
@@ -26,6 +38,11 @@ export async function downloadDataUrlAsFile(dataUrl: string, filename: string): 
  * 在新窗口打开（先同步 open 空白页再赋 blob URL，利于 iOS/部分 WebView 保留用户手势）
  */
 export async function openDataUrlInNewWindow(dataUrl: string): Promise<void> {
+  if (!dataUrl.startsWith('data:')) {
+    const newWin = window.open(dataUrl, '_blank', 'noopener,noreferrer');
+    if (!newWin) throw new Error('POPUP_BLOCKED');
+    return;
+  }
   const newWin = window.open('', '_blank', 'noopener,noreferrer');
   if (!newWin) {
     throw new Error('POPUP_BLOCKED');

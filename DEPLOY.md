@@ -38,10 +38,28 @@ vercel --prod
 
 在 Vercel 的 Project Settings -> Environment Variables 中配置：
 
+- `VITE_STORAGE_PROVIDER` = `supabase`
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `VITE_EVENT_IMAGE_BUCKET` = `event-images`
+- `VITE_EVENT_EXCEL_BUCKET` = `event-excel`
+- `VITE_EVENT_PDF_BUCKET` = `event-pdf`
 
 配置完成后重新部署，编辑者登录才可正常使用。
+
+### 4. 初始化 Storage Buckets（首次部署必做）
+
+在 Supabase Dashboard -> Storage -> Buckets 中确认以下桶存在：
+
+- `event-images`
+- `event-excel`
+- `event-pdf`
+
+建议首次部署后做一次最小验证：
+
+1. 进入任意桶上传一个小文件
+2. 预览或下载该文件（验证读取）
+3. 删除该文件（验证删除）
 
 ## 二、访问控制说明
 

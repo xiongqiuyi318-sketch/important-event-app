@@ -12,7 +12,7 @@
 - 📅 **时间管理**：设置开始时间和截止时间（Deadline）
 - 🏷️ **分类系统**：支持9种事件分类（发货、进口、本地销售等）
 - 📜 **历史记录**：查看已完成或过期的事件
-- 💾 **本地存储**：数据保存在浏览器localStorage中
+- ☁️ **云端存储（Supabase）**：支持多设备同步与实时更新
 
 ## 特殊功能
 
@@ -36,6 +36,16 @@
 ### 安装依赖
 ```bash
 npm install
+### 环境变量
+请复制 `.env.example` 到 `.env.local`，并至少配置：
+
+- `VITE_STORAGE_PROVIDER=supabase`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_EVENT_IMAGE_BUCKET`（默认 `event-images`）
+- `VITE_EVENT_EXCEL_BUCKET`（默认 `event-excel`）
+- `VITE_EVENT_PDF_BUCKET`（默认 `event-pdf`）
+
 ```
 
 ### 开发模式
@@ -80,6 +90,7 @@ npm run preview
 - Vite
 - React Router
 - date-fns
+- Supabase (Auth / Database / Storage / Realtime)
 - CSS3
 
 ## 项目结构

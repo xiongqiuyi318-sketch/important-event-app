@@ -12,16 +12,22 @@ export type EventCategory =
   | '其他';
 
 export interface StepStatusImage {
-  dataUrl: string; // e.g. data:image/jpeg;base64,...
+  dataUrl?: string; // legacy inline data for backward compatibility
+  url?: string; // accessible http(s) url
+  storageBucket?: string; // supabase storage bucket
+  storagePath?: string; // object path in bucket
   name?: string;
   type?: string;
   size?: number; // bytes
   addedAt: string; // ISO date string
 }
 
-/** 步骤附件（Excel / PDF 等），以 data URL 形式存储 */
+/** 步骤附件（Excel / PDF 等），支持 dataUrl(兼容) 或 Storage 引用 */
 export interface StepAttachment {
-  dataUrl: string;
+  dataUrl?: string;
+  url?: string;
+  storageBucket?: string;
+  storagePath?: string;
   name?: string;
   type?: string;
   size?: number;

@@ -7,7 +7,7 @@ import './EventForm.css';
 
 interface EventFormProps {
   event?: Event;
-  onSave: () => void;
+  onSave: (savedEvent?: Event) => void;
   onCancel: () => void;
   canEdit?: boolean;
 }
@@ -52,6 +52,8 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
   );
   const [steps, setSteps] = useState(event?.steps || []);
   const [newStepContent, setNewStepContent] = useState('');
+  const [stepsDirty, setStepsDirty] = useState(!event);
+  const [submitting, setSubmitting] = useState(false);
   
   // 验证状态
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
@@ -140,6 +142,7 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
     if (!event && category && (title || description)) {
       const generatedSteps = generateStepsForCategory(category, title, description);
       setSteps(generatedSteps);
+      setStepsDirty(true);
     }
   }, [title, description, category, event]);
 
@@ -159,6 +162,7 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
     const updatedContents = updatedSteps.map(s => s.content).join('|');
     if (currentContents !== updatedContents) {
       setSteps(updatedSteps);
+      setStepsDirty(true);
     }
   }, [description, category, event, steps]);
 
@@ -171,12 +175,14 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
         order: steps.length
       };
       setSteps([...steps, newStep]);
+      setStepsDirty(true);
       setNewStepContent('');
     }
   };
 
   const handleDeleteStep = (stepId: string) => {
     setSteps(steps.filter(s => s.id !== stepId).map((s, index) => ({ ...s, order: index })));
+    setStepsDirty(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -201,9 +207,10 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
       return;
     }
 
+    setSubmitting(true);
     // 验证通过：保存数据
-    const currentEvents = await loadEvents();
     const nowIso = new Date().toISOString();
+    const mappedSteps = steps.map((s, index) => ({ ...s, order: index }));
     const eventData: Event = {
       id: event?.id || `event-${Date.now()}`,
       title: title.trim(),
@@ -212,25 +219,49 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
       priority: priority as EventPriority,
       deadline: deadline ? new Date(deadline).toISOString() : undefined,
       startTime: startTime ? new Date(startTime).toISOString() : undefined,
-      steps: steps.map((s, index) => ({ ...s, order: index })),
+      steps: mappedSteps,
       createdAt: event?.createdAt || nowIso,
-      updatedAt: event?.updatedAt || event?.createdAt || nowIso,
+      updatedAt: nowIso,
       completed: event?.completed || false,
       expired: false,
-      sortOrder: event?.sortOrder || currentEvents.filter(e => e.priority === priority).length,
+      sortOrder: event?.sortOrder || 0,
       startTimeReminderEnabled: startTime && startTimeReminderEnabled ? startTimeReminderEnabled : undefined,
       startTimeReminderType: startTime && startTimeReminderEnabled ? startTimeReminderType : undefined,
       deadlineReminderEnabled: deadline && deadlineReminderEnabled ? deadlineReminderEnabled : undefined,
       deadlineReminderType: deadline && deadlineReminderEnabled ? deadlineReminderType : undefined,
     };
 
-    if (event) {
-      await updateEvent(event.id, eventData);
-    } else {
-      await addEvent(eventData);
+    try {
+      if (event) {
+        const updates: Partial<Event> = {
+          title: eventData.title,
+          description: eventData.description,
+          category: eventData.category,
+          priority: eventData.priority,
+          deadline: eventData.deadline,
+          startTime: eventData.startTime,
+          startTimeReminderEnabled: eventData.startTimeReminderEnabled,
+          startTimeReminderType: eventData.startTimeReminderType,
+          deadlineReminderEnabled: eventData.deadlineReminderEnabled,
+          deadlineReminderType: eventData.deadlineReminderType,
+        };
+        if (stepsDirty) {
+          updates.steps = mappedSteps;
+        }
+        await updateEvent(event.id, updates);
+        onSave({ ...event, ...updates, updatedAt: nowIso });
+      } else {
+        const currentEvents = await loadEvents();
+        const finalEvent: Event = {
+          ...eventData,
+          sortOrder: currentEvents.filter(e => e.priority === priority).length,
+        };
+        await addEvent(finalEvent);
+        onSave(finalEvent);
+      }
+    } finally {
+      setSubmitting(false);
     }
-
-    onSave();
   };
   
   // 处理错误弹窗关闭
@@ -521,11 +552,11 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
           </div>
 
           <div className="form-actions">
-            <button type="button" className="btn-cancel" onClick={onCancel}>
+            <button type="button" className="btn-cancel" onClick={onCancel} disabled={submitting}>
               取消
             </button>
-            <button type="submit" className="btn-submit" disabled={!effectiveCanEdit}>
-              {event ? '更新' : '创建'}
+            <button type="submit" className="btn-submit" disabled={!effectiveCanEdit || submitting}>
+              {submitting ? '提交中...' : event ? '更新' : '创建'}
             </button>
           </div>
         </form>

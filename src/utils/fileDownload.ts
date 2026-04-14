@@ -2,7 +2,14 @@ export function safeFilename(name: string): string {
   return name.replace(/[\\/:*?"<>|]/g, '_');
 }
 
-export function getImageExtension(dataUrl?: string, type?: string): string {
+export function getImageExtension(dataUrl?: string, type?: string, name?: string): string {
+  if (name) {
+    const m = name.match(/\.([a-z0-9]+)$/i);
+    if (m) {
+      const ext = m[1].toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) return ext === 'jpeg' ? 'jpg' : ext;
+    }
+  }
   if (type === 'image/png') return 'png';
   if (type === 'image/webp') return 'webp';
   if (type === 'image/gif') return 'gif';
@@ -16,9 +23,10 @@ export function buildStepImageFilename(
   eventTitle: string | undefined,
   stepNumber: number,
   dataUrl?: string,
-  type?: string
+  type?: string,
+  name?: string
 ): string {
-  const ext = getImageExtension(dataUrl, type);
+  const ext = getImageExtension(dataUrl, type, name);
   return `${safeFilename(eventTitle || '事件')}-步骤${stepNumber}.${ext}`;
 }
 
@@ -47,7 +55,7 @@ export function buildStepDocumentDownloadName(
   stepNumber: number,
   slotIndex: number,
   kind: 'excel' | 'pdf',
-  attachment: { name?: string; type?: string; dataUrl: string }
+  attachment: { name?: string; type?: string; dataUrl?: string }
 ): string {
   const base = safeFilename(eventTitle || '事件');
   const ext = getDocumentExtension(attachment.name, attachment.type, attachment.dataUrl);
