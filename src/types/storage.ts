@@ -24,9 +24,9 @@ export interface SyncStatus {
 }
 
 export interface StorageAdapter {
-  getEvents(): Promise<Event[]>;
-  getAllEvents(): Promise<Event[]>;
-  getEventById(id: string): Promise<Event | null>;
+  getEvents(companyId: string): Promise<Event[]>;
+  getAllEvents(companyId: string): Promise<Event[]>;
+  getEventById(id: string, companyId?: string): Promise<Event | null>;
   addEvent(event: Event): Promise<void>;
   updateEvent(id: string, updates: Partial<Event>): Promise<void>;
   deleteEvent(id: string): Promise<void>;

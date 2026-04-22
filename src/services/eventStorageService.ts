@@ -5,7 +5,6 @@ import {
   addEvent as addLocalEvent,
   deleteEvent as deleteLocalEvent,
   deleteMultipleEvents as deleteLocalMultipleEvents,
-  deleteAllCompletedEvents as deleteAllCompletedLocalEvents,
   loadAllEvents as loadAllLocalEvents,
   loadEvents as loadLocalEvents,
   reorderEvents as reorderLocalEvents,
@@ -14,19 +13,26 @@ import {
 import { getCurrentDeviceLabel } from '../utils/deviceInfo';
 
 const PROVIDER = (import.meta.env.VITE_STORAGE_PROVIDER || 'local').toLowerCase();
+const DEFAULT_COMPANY_ID = 'akp';
 let lastEditorAccessCheckAt = 0;
 let lastEditorAccessValue: boolean | null = null;
 const EDITOR_ACCESS_CACHE_MS = 10_000;
 const EVENTS_CACHE_MS = 4_000;
-let eventsCache: { at: number; data: Event[] } | null = null;
+let eventsCache: { at: number; data: Event[]; companyId: string } | null = null;
 
-const setEventsCache = (events: Event[]) => {
-  eventsCache = { at: Date.now(), data: events };
+const normalizeCompanyId = (companyId?: string): string => {
+  const normalized = (companyId || DEFAULT_COMPANY_ID).trim().toLowerCase();
+  return normalized || DEFAULT_COMPANY_ID;
 };
 
-const getEventsCache = (): Event[] | null => {
+const setEventsCache = (events: Event[], companyId: string) => {
+  eventsCache = { at: Date.now(), data: events, companyId: normalizeCompanyId(companyId) };
+};
+
+const getEventsCache = (companyId: string): Event[] | null => {
   if (!eventsCache) return null;
   if (Date.now() - eventsCache.at > EVENTS_CACHE_MS) return null;
+  if (eventsCache.companyId !== normalizeCompanyId(companyId)) return null;
   return eventsCache.data;
 };
 
@@ -78,23 +84,27 @@ type EventRow = {
   expired: boolean;
   sort_order: number;
   is_public: boolean;
+  company_id: string;
   created_at: string;
   updated_at: string;
   updated_by_device?: string | null;
 };
 
 class LocalStorageAdapter implements StorageAdapter {
-  async getEvents(): Promise<Event[]> {
-    return loadLocalEvents();
+  async getEvents(companyId: string): Promise<Event[]> {
+    const normalizedCompanyId = normalizeCompanyId(companyId);
+    return loadLocalEvents().filter((event) => normalizeCompanyId(event.companyId) === normalizedCompanyId);
   }
 
-  async getAllEvents(): Promise<Event[]> {
-    return loadAllLocalEvents();
+  async getAllEvents(companyId: string): Promise<Event[]> {
+    const normalizedCompanyId = normalizeCompanyId(companyId);
+    return loadAllLocalEvents().filter((event) => normalizeCompanyId(event.companyId) === normalizedCompanyId);
   }
 
-  async getEventById(id: string): Promise<Event | null> {
+  async getEventById(id: string, companyId?: string): Promise<Event | null> {
+    const normalizedCompanyId = normalizeCompanyId(companyId);
     const events = loadAllLocalEvents();
-    return events.find((e) => e.id === id) || null;
+    return events.find((e) => e.id === id && normalizeCompanyId(e.companyId) === normalizedCompanyId) || null;
   }
 
   async addEvent(event: Event): Promise<void> {
@@ -129,6 +139,7 @@ class SupabaseStorageAdapter implements StorageAdapter {
   private mapRowToEvent(row: EventRow): Event {
     const event: Event = {
       id: row.id,
+      companyId: row.company_id,
       title: row.title,
       description: row.description || undefined,
       category: row.category as Event['category'],
@@ -158,11 +169,13 @@ class SupabaseStorageAdapter implements StorageAdapter {
     return data.user.id;
   }
 
-  async getEvents(): Promise<Event[]> {
+  async getEvents(companyId: string): Promise<Event[]> {
     const client = this.ensureClient();
+    const normalizedCompanyId = normalizeCompanyId(companyId);
     const { data, error } = await client
       .from('events')
       .select('*')
+      .eq('company_id', normalizedCompanyId)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true });
 
@@ -173,16 +186,18 @@ class SupabaseStorageAdapter implements StorageAdapter {
     return ((data || []) as EventRow[]).map((row) => this.mapRowToEvent(row));
   }
 
-  async getAllEvents(): Promise<Event[]> {
-    return this.getEvents();
+  async getAllEvents(companyId: string): Promise<Event[]> {
+    return this.getEvents(companyId);
   }
 
-  async getEventById(id: string): Promise<Event | null> {
+  async getEventById(id: string, companyId?: string): Promise<Event | null> {
     const client = this.ensureClient();
+    const normalizedCompanyId = normalizeCompanyId(companyId);
     const { data, error } = await client
       .from('events')
       .select('*')
       .eq('id', id)
+      .eq('company_id', normalizedCompanyId)
       .maybeSingle();
     if (error) {
       throw new Error(error.message);
@@ -208,6 +223,7 @@ class SupabaseStorageAdapter implements StorageAdapter {
       expired: checkEventExpired(event),
       sort_order: event.sortOrder,
       is_public: true,
+      company_id: normalizeCompanyId(event.companyId),
       updated_at: event.updatedAt || event.createdAt,
       updated_by_device: event.updatedByDevice || null,
     };
@@ -268,9 +284,21 @@ class SupabaseStorageAdapter implements StorageAdapter {
 
   async reorderEvents(id: string, direction: 'up' | 'down', priority: number): Promise<void> {
     const client = this.ensureClient();
+    const { data: current, error: currentError } = await client
+      .from('events')
+      .select('company_id')
+      .eq('id', id)
+      .maybeSingle();
+    if (currentError) {
+      throw new Error(currentError.message);
+    }
+    const companyId = (current as { company_id?: string } | null)?.company_id;
+    if (!companyId) return;
+
     const { data, error } = await client
       .from('events')
       .select('*')
+      .eq('company_id', companyId)
       .eq('priority', priority)
       .eq('completed', false)
       .eq('expired', false)
@@ -314,38 +342,42 @@ const createAdapter = (): StorageAdapter => {
 
 const adapter = createAdapter();
 
-export const loadEventById = async (id: string): Promise<Event | null> => {
-  const cached = getEventsCache();
+export const loadEventById = async (id: string, companyId: string = DEFAULT_COMPANY_ID): Promise<Event | null> => {
+  const normalizedCompanyId = normalizeCompanyId(companyId);
+  const cached = getEventsCache(normalizedCompanyId);
   if (cached) {
     const fromCache = cached.find((event) => event.id === id);
     if (fromCache) return fromCache;
   }
-  return adapter.getEventById(id);
+  return adapter.getEventById(id, normalizedCompanyId);
 };
-export const loadEvents = async (): Promise<Event[]> => {
-  const cached = getEventsCache();
+export const loadEvents = async (companyId: string = DEFAULT_COMPANY_ID): Promise<Event[]> => {
+  const normalizedCompanyId = normalizeCompanyId(companyId);
+  const cached = getEventsCache(normalizedCompanyId);
   if (cached) return cached;
-  const data = await adapter.getEvents();
-  setEventsCache(data);
+  const data = await adapter.getEvents(normalizedCompanyId);
+  setEventsCache(data, normalizedCompanyId);
   return data;
 };
-export const loadAllEvents = async (): Promise<Event[]> => {
-  const data = await adapter.getAllEvents();
-  setEventsCache(data);
+export const loadAllEvents = async (companyId: string = DEFAULT_COMPANY_ID): Promise<Event[]> => {
+  const normalizedCompanyId = normalizeCompanyId(companyId);
+  const data = await adapter.getAllEvents(normalizedCompanyId);
+  setEventsCache(data, normalizedCompanyId);
   return data;
 };
-export const getCompletedEventsCount = async (): Promise<number> => {
-  const allEvents = await adapter.getAllEvents();
+export const getCompletedEventsCount = async (companyId: string = DEFAULT_COMPANY_ID): Promise<number> => {
+  const allEvents = await adapter.getAllEvents(normalizeCompanyId(companyId));
   return allEvents.filter((event) => event.completed).length;
 };
 
-export const addEvent = async (event: Event): Promise<boolean> => {
+export const addEvent = async (event: Event, companyId: string = DEFAULT_COMPANY_ID): Promise<boolean> => {
   if (!(await hasEditorAccess())) {
     denyWrite();
     return false;
   }
   await adapter.addEvent({
     ...event,
+    companyId: normalizeCompanyId(companyId),
     updatedByDevice: getCurrentDeviceLabel(),
   });
   invalidateEventsCache();
@@ -395,15 +427,20 @@ export const reorderEvents = async (id: string, direction: 'up' | 'down', priori
   return true;
 };
 
-export const deleteAllCompletedEvents = async (): Promise<number> => {
+export const deleteAllCompletedEvents = async (companyId: string = DEFAULT_COMPANY_ID): Promise<number> => {
   if (!(await hasEditorAccess())) {
     denyWrite();
     return 0;
   }
   if (PROVIDER !== 'supabase') {
-    return deleteAllCompletedLocalEvents();
+    const allEvents = await adapter.getAllEvents(normalizeCompanyId(companyId));
+    const completedIds = allEvents.filter((event) => event.completed).map((event) => event.id);
+    if (completedIds.length === 0) return 0;
+    await adapter.deleteMultipleEvents(completedIds);
+    invalidateEventsCache();
+    return completedIds.length;
   }
-  const allEvents = await adapter.getAllEvents();
+  const allEvents = await adapter.getAllEvents(normalizeCompanyId(companyId));
   const completedIds = allEvents.filter((event) => event.completed).map((event) => event.id);
   if (completedIds.length === 0) return 0;
   await adapter.deleteMultipleEvents(completedIds);

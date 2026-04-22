@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAccess } from '../context/AccessContext';
 import { getCompletedEventsCount, deleteAllCompletedEvents } from '../services/eventStorageService';
 import './MonthlyCleanupReminder.css';
@@ -12,6 +12,7 @@ interface CleanupReminderState {
 }
 
 export default function MonthlyCleanupReminder() {
+  const { companyId = 'akp' } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
   const { canEdit } = useAccess();
   const [showModal, setShowModal] = useState(false);
@@ -46,7 +47,7 @@ export default function MonthlyCleanupReminder() {
       }
 
       // 检查是否有已完成事件
-      const count = await getCompletedEventsCount();
+      const count = await getCompletedEventsCount(companyId);
       if (count > 0) {
         setCompletedCount(count);
         setShowModal(true);
@@ -67,7 +68,7 @@ export default function MonthlyCleanupReminder() {
   const handleViewList = () => {
     saveReminderState(true);
     setShowModal(false);
-    navigate('/completed');
+    navigate(`/companies/${companyId}/completed`);
   };
 
   const handleSkip = () => {
@@ -78,7 +79,7 @@ export default function MonthlyCleanupReminder() {
   const handleDeleteAll = async () => {
     if (!canEdit) return;
     if (window.confirm(`确定要删除所有 ${completedCount} 个已完成事件吗？此操作无法撤销。`)) {
-      const deleted = await deleteAllCompletedEvents();
+      const deleted = await deleteAllCompletedEvents(companyId);
       saveReminderState(true);
       setShowModal(false);
       alert(`已成功删除 ${deleted} 个已完成事件，释放了存储空间。`);

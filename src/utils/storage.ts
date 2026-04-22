@@ -135,6 +135,7 @@ export const loadEvents = (): Event[] => {
       // 更新过期状态
       parsed.events = (parsed.events || []).map((event: Event) => ({
         ...event,
+        companyId: event.companyId || 'akp',
         expired: checkEventExpired(event)
       }));
       return parsed.events;
@@ -177,6 +178,7 @@ export const addEvent = (event: Event): void => {
   const events = loadEvents();
   events.push({
     ...event,
+    companyId: event.companyId || 'akp',
     updatedAt: event.updatedAt || event.createdAt || new Date().toISOString(),
     updatedByDevice: event.updatedByDevice,
   });
@@ -290,6 +292,7 @@ export const loadAllEvents = (): Event[] => {
       // 更新过期状态
       return (parsed.events || []).map((event: Event) => ({
         ...event,
+        companyId: event.companyId || 'akp',
         expired: checkEventExpired(event)
       }));
     }

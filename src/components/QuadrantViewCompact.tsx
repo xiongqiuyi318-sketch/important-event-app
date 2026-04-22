@@ -3,6 +3,7 @@ import EventCardCompact from './EventCardCompact';
 import './QuadrantViewCompact.css';
 
 interface QuadrantViewCompactProps {
+  companyId: string;
   eventsByPriority: {
     1: Event[];
     2: Event[];
@@ -20,7 +21,7 @@ const quadrantConfig = {
   4: { title: '不紧急不重要', icon: '⚪', color: '#888888', priority: 4 as EventPriority },
 };
 
-export default function QuadrantViewCompact({ eventsByPriority, onEventReorder, canEdit = false }: QuadrantViewCompactProps) {
+export default function QuadrantViewCompact({ companyId, eventsByPriority, onEventReorder, canEdit = false }: QuadrantViewCompactProps) {
   return (
     <div className="quadrant-view-compact">
       <div className="quadrant-grid-compact">
@@ -54,6 +55,7 @@ export default function QuadrantViewCompact({ eventsByPriority, onEventReorder, 
                     return (
                       <EventCardCompact
                         key={event.id}
+                        companyId={companyId}
                         event={event}
                         onMoveUp={onEventReorder ? () => onEventReorder(event.id, 'up', priority as EventPriority) : undefined}
                         onMoveDown={onEventReorder ? () => onEventReorder(event.id, 'down', priority as EventPriority) : undefined}

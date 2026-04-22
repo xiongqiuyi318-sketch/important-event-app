@@ -14,6 +14,7 @@ create table if not exists public.events (
   expired boolean not null default false,
   sort_order int not null default 0,
   is_public boolean not null default true,
+  company_id text not null default 'akp',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   updated_by_device text
@@ -25,6 +26,10 @@ create table if not exists public.editor_users (
 );
 
 alter table public.events add column if not exists updated_by_device text;
+alter table public.events add column if not exists company_id text;
+update public.events set company_id = 'akp' where company_id is null;
+alter table public.events alter column company_id set not null;
+create index if not exists idx_events_company_id on public.events(company_id);
 
 alter table public.events enable row level security;
 alter table public.editor_users enable row level security;

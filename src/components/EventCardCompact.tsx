@@ -3,6 +3,7 @@ import { Event } from '../types';
 import './EventCardCompact.css';
 
 interface EventCardCompactProps {
+  companyId: string;
   event: Event;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -11,6 +12,7 @@ interface EventCardCompactProps {
 }
 
 export default function EventCardCompact({ 
+  companyId,
   event, 
   onMoveUp, 
   onMoveDown, 
@@ -42,7 +44,7 @@ export default function EventCardCompact({
     new Date(event.updatedAt!).getTime() > new Date(event.createdAt).getTime() + 1000;
 
   const handleClick = () => {
-    navigate(`/event/${event.id}`);
+    navigate(`/companies/${companyId}/event/${event.id}`);
   };
 
   const handleMoveUp = (e: React.MouseEvent) => {

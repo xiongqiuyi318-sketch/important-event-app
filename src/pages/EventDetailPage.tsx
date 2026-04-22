@@ -105,7 +105,7 @@ function isPdfFile(file: File): boolean {
 }
 
 export default function EventDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id, companyId = 'akp' } = useParams<{ id: string; companyId: string }>();
   const navigate = useNavigate();
   const { canEdit } = useAccess();
   const [event, setEvent] = useState<Event | null>(null);
@@ -175,13 +175,13 @@ export default function EventDetailPage() {
 
   const loadEventData = useCallback(async () => {
     if (!id) return;
-    const found = await loadEventById(id);
+    const found = await loadEventById(id, companyId);
     if (found) {
       setEvent(found);
     } else {
-      navigate('/');
+      navigate(`/companies/${companyId}`);
     }
-  }, [id, navigate]);
+  }, [id, companyId, navigate]);
 
   useEffect(() => {
     void loadEventData();
@@ -278,7 +278,7 @@ export default function EventDetailPage() {
     if (!canEdit) return;
     if (window.confirm(`确定要删除事件"${event.title}"吗？`)) {
       await deleteEvent(event.id);
-      navigate('/');
+      navigate(`/companies/${companyId}`);
     }
   };
 
@@ -391,7 +391,7 @@ export default function EventDetailPage() {
   const handleMarkComplete = async () => {
     if (!canEdit) return;
     await updateEvent(event.id, { completed: true });
-    navigate('/');
+    navigate(`/companies/${companyId}`);
   };
 
   const handleOpenAttachment = async (attachment: StepStatusImage | StepAttachment) => {
@@ -424,6 +424,7 @@ export default function EventDetailPage() {
     return (
       <div className="event-detail-page">
         <EventForm
+          companyId={companyId}
           event={event}
           onSave={(savedEvent) => {
             if (savedEvent) {
@@ -442,7 +443,7 @@ export default function EventDetailPage() {
     <div className="event-detail-page">
       {/* 紧凑标题栏 */}
       <div className="detail-header-compact">
-        <button className="btn-back-compact" onClick={() => navigate('/')}>
+        <button className="btn-back-compact" onClick={() => navigate(`/companies/${companyId}`)}>
           ← 返回
         </button>
         <div className="title-with-tags">

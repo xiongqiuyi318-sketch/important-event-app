@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Event, StepAttachment, StepStatusImage } from '../types';
 import { useAccess } from '../context/AccessContext';
 import { loadEvents, deleteEvent } from '../services/eventStorageService';
@@ -50,6 +51,7 @@ const hasAnyStepAttachment = (event: Event): boolean => {
 };
 
 export default function HistoryPage() {
+  const { companyId = 'akp' } = useParams<{ companyId: string }>();
   const { canEdit } = useAccess();
   const [events, setEvents] = useState<Event[]>([]);
 
@@ -78,10 +80,10 @@ export default function HistoryPage() {
 
   useEffect(() => {
     void loadHistoryEvents();
-  }, []);
+  }, [companyId]);
 
   const loadHistoryEvents = async () => {
-    const allEvents = await loadEvents();
+    const allEvents = await loadEvents(companyId);
     // 只显示已完成或过期的事件
     const historyEvents = allEvents
       .filter(e => e.completed || e.expired)

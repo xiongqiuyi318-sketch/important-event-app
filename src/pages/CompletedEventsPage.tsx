@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Event } from '../types';
 import { useAccess } from '../context/AccessContext';
 import { loadAllEvents, deleteEvent, updateEvent, deleteMultipleEvents } from '../services/eventStorageService';
@@ -8,17 +8,18 @@ import { zhCN } from 'date-fns/locale';
 import './CompletedEventsPage.css';
 
 export default function CompletedEventsPage() {
+  const { companyId = 'akp' } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
   const { canEdit } = useAccess();
   const [completedEvents, setCompletedEvents] = useState<Event[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const loadData = useCallback(async () => {
-    const allEvents = await loadAllEvents();
+    const allEvents = await loadAllEvents(companyId);
     const completed = allEvents.filter(e => e.completed);
     setCompletedEvents(completed);
     setSelectedIds(new Set());
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
     void loadData();
@@ -93,7 +94,7 @@ export default function CompletedEventsPage() {
   return (
     <div className="completed-events-page">
       <div className="completed-header">
-        <button className="btn-back" onClick={() => navigate('/')}>
+        <button className="btn-back" onClick={() => navigate(`/companies/${companyId}`)}>
           ← 返回首页
         </button>
         <h1>✅ 已完成事件</h1>
@@ -132,7 +133,7 @@ export default function CompletedEventsPage() {
         <div className="no-completed">
           <div className="empty-icon">🎉</div>
           <p>暂无已完成的事件</p>
-          <button className="btn-go-home" onClick={() => navigate('/')}>
+          <button className="btn-go-home" onClick={() => navigate(`/companies/${companyId}`)}>
             返回首页
           </button>
         </div>

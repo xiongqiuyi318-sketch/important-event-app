@@ -51,6 +51,7 @@ export interface EventStep {
 
 export interface Event {
   id: string;
+  companyId: string;
   title: string;
   description?: string;
   category: EventCategory;

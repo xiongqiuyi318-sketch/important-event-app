@@ -6,6 +6,7 @@ import { useAccess } from '../context/AccessContext';
 import './EventForm.css';
 
 interface EventFormProps {
+  companyId: string;
   event?: Event;
   onSave: (savedEvent?: Event) => void;
   onCancel: () => void;
@@ -23,7 +24,7 @@ const categories: EventCategory[] = [
   '项目开发', '活动策划', '机械维修', '其他'
 ];
 
-export default function EventForm({ event, onSave, onCancel, canEdit = false }: EventFormProps) {
+export default function EventForm({ companyId, event, onSave, onCancel, canEdit = false }: EventFormProps) {
   const { canEdit: canEditFromAccess } = useAccess();
   const effectiveCanEdit = canEdit || canEditFromAccess;
 
@@ -213,6 +214,7 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
     const mappedSteps = steps.map((s, index) => ({ ...s, order: index }));
     const eventData: Event = {
       id: event?.id || `event-${Date.now()}`,
+      companyId,
       title: title.trim(),
       description: description.trim() || undefined,
       category: category as EventCategory,
@@ -251,12 +253,12 @@ export default function EventForm({ event, onSave, onCancel, canEdit = false }: 
         await updateEvent(event.id, updates);
         onSave({ ...event, ...updates, updatedAt: nowIso });
       } else {
-        const currentEvents = await loadEvents();
+        const currentEvents = await loadEvents(companyId);
         const finalEvent: Event = {
           ...eventData,
           sortOrder: currentEvents.filter(e => e.priority === priority).length,
         };
-        await addEvent(finalEvent);
+        await addEvent(finalEvent, companyId);
         onSave(finalEvent);
       }
     } finally {

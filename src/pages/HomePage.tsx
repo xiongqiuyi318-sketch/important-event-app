@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Event, EventPriority } from '../types';
 import { useAccess } from '../context/AccessContext';
 import { loadEvents, reorderEvents } from '../services/eventStorageService';
@@ -11,6 +11,7 @@ import CalendarSyncButton from '../components/CalendarSyncButton';
 import './HomePage.css';
 
 export default function HomePage() {
+  const { companyId = 'akp' } = useParams<{ companyId: string }>();
   const isEventUpdated = useCallback((event: Event): boolean => {
     if (!event.updatedAt) return false;
     return new Date(event.updatedAt).getTime() > new Date(event.createdAt).getTime() + 1000;
@@ -25,12 +26,12 @@ export default function HomePage() {
   const [showUpdatedOnly, setShowUpdatedOnly] = useState(false);
 
   const loadEventsData = useCallback(async () => {
-    const loadedEvents = await loadEvents();
+    const loadedEvents = await loadEvents(companyId);
     const activeEvents = loadedEvents.filter(e => !e.completed && !e.expired);
     setEvents(activeEvents);
     const completed = loadedEvents.filter((e) => e.completed).length;
     setCompletedCount(completed);
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
     loadEventsData();
@@ -42,19 +43,23 @@ export default function HomePage() {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const channel = client
       .channel('events-home-sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'events', filter: `company_id=eq.${companyId}` },
+        () => {
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
           void loadEventsData();
         }, 180);
-      })
+      }
+      )
       .subscribe();
 
     return () => {
       if (timer) clearTimeout(timer);
       void client.removeChannel(channel);
     };
-  }, [loadEventsData]);
+  }, [companyId, loadEventsData]);
 
   const handleEventSaved = useCallback(async (_savedEvent?: Event) => {
     await loadEventsData();
@@ -126,7 +131,7 @@ export default function HomePage() {
         </div>
         <button 
           className="completed-btn"
-          onClick={() => navigate('/completed')}
+          onClick={() => navigate(`/companies/${companyId}/completed`)}
         >
           ✅ 已完成 ({completedCount}) →
         </button>
@@ -158,6 +163,7 @@ export default function HomePage() {
 
       {showForm && (
         <EventForm
+          companyId={companyId}
           event={editingEvent || undefined}
           onSave={(savedEvent) => void handleEventSaved(savedEvent)}
           canEdit={canEdit}
@@ -169,6 +175,7 @@ export default function HomePage() {
       )}
 
       <QuadrantViewCompact 
+        companyId={companyId}
         eventsByPriority={eventsByPriority} 
         onEventReorder={handleEventReorder}
         canEdit={canEdit}
